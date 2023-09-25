@@ -1,0 +1,105 @@
+substitutions:
+  name: 121gw
+  device_description: Multimeter 121GW
+  friendly_name: Multimeter 121GW
+
+packages:
+    common: !include 
+        file: ../common.yaml
+        vars: 
+            friendly_name: ${friendly_name}
+
+esphome:
+  name: ${name}
+  comment: ${device_description}
+  platformio_options:
+    board_build.f_cpu: 160000000L
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+    sdkconfig_options:
+      CONFIG_FREERTOS_UNICORE: y
+
+# Enable logging
+logger:
+  baud_rate: 19200
+  level: DEBUG
+
+#  - platform: adc
+#    pin: GPIO33
+#    name: "${friendly_name} ADC Supply voltage"
+#    attenuation: 11db
+#    update_interval: 10s
+
+switch:
+  - platform: gpio
+    id: output1
+    pin: GPIO26
+    name: "${friendly_name} Output 1"
+
+binary_sensor:
+  - platform: gpio
+    id: input1
+    name: "${friendly_name} Input 1"
+    pin: 
+      number: GPIO04
+
+  - platform: gpio
+    id: button
+    pin: 
+      number: GPIO25
+      inverted: True
+      mode:
+        input: true
+        pullup: true
+    name: "${friendly_name} Reset button"
+
+light:
+  - platform: status_led
+    name: "${friendly_name} Led"
+    pin: 
+      number: GPIO0
+      inverted: true
+
+esp32_ble_tracker:
+   scan_parameters:
+    active: true
+
+ble_client:
+  - mac_address: 00:00:00:00:00:00
+    id: m_121gw
+
+external_components:
+  - source: components
+
+multimeter_121gw:
+  on_packet_received:
+    then:
+      - lambda: |-
+          //std::stringstream os;
+          //os << p;
+          //ESP_LOGD("multimeter_121gw", "Received %s", os.str().c_str());
+          
+          HomeassistantServiceResponse resp;
+          resp.service = "esphome.121gw_event";
+          resp.is_event = true;
+          std::map<std::string, std::string> data = {
+              {"mode", std::to_string(p.mode)},
+              {"value", std::to_string(p.value)},
+              {"sub_mode", std::to_string(p.sub_mode)},
+              {"sub_value", std::to_string(p.sub_value)}
+          };
+          for (auto &it : data) {
+            HomeassistantServiceMap kv;
+            kv.key = it.first;
+            kv.value = it.second;
+            resp.data.push_back(kv);
+          }
+          id(api_server).send_homeassistant_service_call(resp);
+
+
+#121gw "88:6B:0F:81:A9:8D
+# - 0BD51666-E7CB-469B-8E4D-2742F1BA77CC
+# - e7add780-b042-4876-aae1-112855353cc1
