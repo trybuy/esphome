@@ -36,7 +36,7 @@ async def update(x, y, y2):
     source2.stream(dict(x=[x], y=[y2]))
 
 async def main():
-    cli = aioesphomeapi.APIClient("121gw.local", 6053, None, noise_psk="cG7PknYMvS2bn4jRRddtFszvnvVjG4lH4Y2Axi8H1CU=")
+    cli = aioesphomeapi.APIClient("121gw.local", 6053, None, noise_psk="xxxx")
 
     await cli.connect(login=True)
 
