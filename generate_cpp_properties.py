@@ -1,35 +1,23 @@
 import json
-import argparse
-import glob
 import os
+import sys
 
-parser = argparse.ArgumentParser(
-                    prog='generate_cpp_properties',
-                    description='Converting platformio idedata.json to vscode c_cpp_properties')
+#
+# esphome idedata .\multimeter121gw\multimeter121gw.yml | python .\generate_cpp_properties.py
+#
 
-parser.add_argument('idedata_file', nargs="?", default="")
-parser.add_argument('cpp_properties_file', nargs="?", default="")  
-args = parser.parse_args()
-
-if args.idedata_file == "":
-    idedata_candidates = glob.glob(".esphome/idedata/*.json")
-    if len(idedata_candidates) > 0:
-        args.idedata_file = idedata_candidates[0]
-
-if args.idedata_file == "" or not os.path.exists(args.idedata_file):
-    print ("idedata json file not found!")
+if sys.stdin.isatty():
+    print("Usage:")
+    print("     esphome idedata <config.yml> | python .\generate_cpp_properties.py")
     exit(1)
 
-if args.cpp_properties_file == "":
-    args.cpp_properties_file = ".vscode/c_cpp_properties.json"
+cpp_properties_file = ".vscode/c_cpp_properties.json"
 
-with open(args.idedata_file) as rf:
-        file_contents = rf.read()
-
-config = json.loads(file_contents)
+config = json.loads(sys.stdin.read())
+print(config)
 name = config["env_name"]
 
-print(f"Generating '{args.cpp_properties_file}' from '{args.idedata_file}', env: '{name}'")
+print(f"Generating '{cpp_properties_file}', env: '{name}'")
 
 cpp_properties = {
     "name": name,
@@ -39,5 +27,16 @@ cpp_properties = {
     "compilerPath": config["cxx_path"]
 }
 
-with open(args.cpp_properties_file, "w") as outfile:
-        outfile.write(json.dumps({"configurations": [cpp_properties], "version": 4}, indent=4))
+if os.path.exists(cpp_properties_file):
+    with open(cpp_properties_file, "r") as cpp_file:
+        target_config = json.loads(cpp_file.read())
+        index = next((i for i, config in enumerate(target_config["configurations"]) if config["name"] == name), -1)
+        if index != -1:
+             target_config["configurations"][index] = cpp_properties
+        else:
+             target_config["configurations"].append(cpp_properties)
+else:
+    target_config = {"configurations": [cpp_properties], "version": 4}
+
+with open(cpp_properties_file, "w") as outfile:
+        outfile.write(json.dumps(target_config, indent=4))
