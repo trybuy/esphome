@@ -1,23 +1,24 @@
+"""Generating cpp_properties configuration based on idedata from platformio
+    Usage:
+        esphome idedata <config.yml> | python .\\generate_cpp_properties.py
+"""
+
 import json
 import os
 import sys
 
-#
-# esphome idedata .\multimeter121gw\multimeter121gw.yml | python .\generate_cpp_properties.py
-#
-
 if sys.stdin.isatty():
     print("Usage:")
-    print("     esphome idedata <config.yml> | python .\generate_cpp_properties.py")
-    exit(1)
+    print("     esphome idedata <config.yml> | python .\\generate_cpp_properties.py")
+    sys.exit(1)
 
-cpp_properties_file = ".vscode/c_cpp_properties.json"
+CPP_PROPERTIES_FILE = ".vscode/c_cpp_properties.json"
 
 config = json.loads(sys.stdin.read())
 print(config)
 name = config["env_name"]
 
-print(f"Generating '{cpp_properties_file}', env: '{name}'")
+print(f"Generating '{CPP_PROPERTIES_FILE}', env: '{name}'")
 
 cpp_properties = {
     "name": name,
@@ -27,16 +28,17 @@ cpp_properties = {
     "compilerPath": config["cxx_path"]
 }
 
-if os.path.exists(cpp_properties_file):
-    with open(cpp_properties_file, "r") as cpp_file:
+if os.path.exists(CPP_PROPERTIES_FILE):
+    with open(CPP_PROPERTIES_FILE, "r", encoding="utf8") as cpp_file:
         target_config = json.loads(cpp_file.read())
-        index = next((i for i, config in enumerate(target_config["configurations"]) if config["name"] == name), -1)
+        configurations = target_config["configurations"]
+        index = next((i for i, c in enumerate(configurations) if c["name"] == name), -1)
         if index != -1:
-             target_config["configurations"][index] = cpp_properties
+            configurations[index] = cpp_properties
         else:
-             target_config["configurations"].append(cpp_properties)
+            configurations.append(cpp_properties)
 else:
     target_config = {"configurations": [cpp_properties], "version": 4}
 
-with open(cpp_properties_file, "w") as outfile:
-        outfile.write(json.dumps(target_config, indent=4))
+with open(CPP_PROPERTIES_FILE, "w", encoding="utf8") as outfile:
+    outfile.write(json.dumps(target_config, indent=4))
