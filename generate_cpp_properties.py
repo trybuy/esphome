@@ -15,15 +15,15 @@ if sys.stdin.isatty():
 CPP_PROPERTIES_FILE = ".vscode/c_cpp_properties.json"
 
 config = json.loads(sys.stdin.read())
-print(config)
 name = config["env_name"]
+includes = set([item for row in config["includes"].values() for item in row])
 
 print(f"Generating '{CPP_PROPERTIES_FILE}', env: '{name}'")
 
 cpp_properties = {
     "name": name,
     "defines": config["defines"], 
-    "includePath": [item for row in config["includes"].values() for item in row],
+    "includePath": [item for item in includes if os.path.exists(item)],
     "compilerArgs": config["cxx_flags"],
     "compilerPath": config["cxx_path"]
 }
