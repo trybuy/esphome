@@ -12,20 +12,37 @@ if sys.stdin.isatty():
     print("     esphome idedata <config.yml> | python .\\generate_cpp_properties.py")
     sys.exit(1)
 
+# presuming that script is running from workspace folder
 CPP_PROPERTIES_FILE = ".vscode/c_cpp_properties.json"
+workspace_folder_rel = (os.getcwd(), "${workspaceFolder}")
+platformio_folder_env = os.getenv('PLATFORMIO_CORE_DIR')
+if platformio_folder_env:
+    platformio_folder_rel = (platformio_folder_env, "${env:PLATFORMIO_CORE_DIR}")
+else:
+    platformio_folder_rel = os.path.expanduser('~'), "${env:HOME}"
+print(workspace_folder_rel, platformio_folder_rel)
+
+def make_path_relative(path):
+    for r in [workspace_folder_rel, platformio_folder_rel]:
+        path = path.replace(r[0], r[1])
+        if os.path.sep == '\\':
+            path = path.replace(r[0].replace('\\', '/'), r[1])
+    return path
 
 config = json.loads(sys.stdin.read())
 name = config["env_name"]
 includes = set([item for row in config["includes"].values() for item in row])
+existing_includes = [item for item in includes if os.path.exists(item)]
+relative_includes = [make_path_relative(item) for item in existing_includes]
 
 print(f"Generating '{CPP_PROPERTIES_FILE}', env: '{name}'")
 
 cpp_properties = {
     "name": name,
     "defines": config["defines"], 
-    "includePath": [item for item in includes if os.path.exists(item)],
-    "compilerArgs": config["cxx_flags"],
-    "compilerPath": config["cxx_path"]
+    "includePath": sorted(relative_includes),
+    "compilerArgs": [make_path_relative(c) for c in config["cxx_flags"]],
+    "compilerPath": make_path_relative(config["cxx_path"])
 }
 
 if os.path.exists(CPP_PROPERTIES_FILE):
