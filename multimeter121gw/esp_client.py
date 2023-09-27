@@ -8,6 +8,8 @@ from bokeh.plotting import figure, curdoc
 from bokeh.models import ColumnDataSource, HoverTool
 
 import aioesphomeapi
+import yaml
+import os
 
 source1 = ColumnDataSource(data={"x": [], "y": []})
 source2 = ColumnDataSource(data={"x": [], "y": []})
@@ -42,7 +44,9 @@ async def update(x_value, y_value, y2_value):
 
 
 async def main():
-    cli = aioesphomeapi.APIClient("121gw.local", 6053, None, noise_psk="xxxx")
+    with open(os.join(os.path.dirname(__file__), "../secrets.yaml")) as secrets_file:
+        secrets = yaml.safe_load(secrets_file)
+    cli = aioesphomeapi.APIClient("121gw.local", 6053, None, noise_psk=secrets["app_key"])
 
     await cli.connect(login=True)
 
