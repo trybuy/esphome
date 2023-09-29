@@ -1,3 +1,4 @@
+# ESP32-U4WDH (Single core, 160MHz, 4MB embedded flash)
 substitutions:
   name: 121gw
   device_description: Multimeter 121GW

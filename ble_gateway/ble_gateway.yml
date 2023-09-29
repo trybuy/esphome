@@ -1,0 +1,86 @@
+# Detecting chip type... ESP32
+# Chip is ESP32-D0WD-V3 (revision v3.0)
+# Features: WiFi, BT, Dual Core, 240MHz, VRef calibration in efuse, Coding Scheme None
+# Crystal is 40MHz
+# MAC: a8:42:e3:52:d6:cc
+# Stub is already running. No upload is necessary.
+# Detected flash size: 4MB
+
+substitutions:
+    name: ble-gateway
+    device_description: BLE Gateway
+    friendly_name: BLE Gateway
+  
+packages:
+    common: !include 
+        file: ../common.yaml
+        vars: 
+            friendly_name: ${friendly_name}
+    bind_keys: !include 
+        file: bind_keys.yaml
+  
+esphome:
+    name: ${name}
+    comment: ${device_description}
+    platformio_options:
+      board_build.f_cpu: 240000000L
+  
+esp32:
+    board: esp32dev
+    framework:
+      type: esp-idf
+  
+# Enable logging
+logger:
+    level: DEBUG
+
+switch:
+  - platform: gpio
+    id: output1
+    pin: GPIO26
+    name: "${friendly_name} Output 1"
+
+binary_sensor:
+  - platform: gpio
+    id: input1
+    name: "${friendly_name} Input 1"
+    pin: 
+        number: GPIO27
+    
+  - platform: gpio
+    id: button
+    pin: 
+        number: GPIO00
+        inverted: True
+        mode:
+            input: true
+            pullup: true
+    name: "${friendly_name} Reset button"
+
+# light:
+#   - platform: status_led
+#     name: "${friendly_name} Led"
+#     pin: 
+#         number: GPIO19
+#         inverted: true
+
+esp32_ble_tracker:
+    scan_parameters:
+        interval: 5s # try with 300ms if you don't have LAN module
+        window: 5s # try with 300ms if you don't have LAN module
+        active: false
+
+xiaomi_ble:
+
+sensor:
+  - platform: xiaomi_cgg1
+    mac_address: "58:2D:34:14:2D:74"
+    bindkey: ${xiaomi_cgg1_582D34142D74_bindkey}
+    temperature:
+        name: "CGG1 Temperature"
+    humidity:
+        name: "CGG1 Humidity"
+    battery_level:
+        name: "CGG1 Battery Level"
+
+# 58:2D:34:14:2D:74
