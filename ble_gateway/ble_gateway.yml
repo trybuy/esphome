@@ -46,6 +46,7 @@ binary_sensor:
     name: "${friendly_name} Input 1"
     pin: 
         number: GPIO27
+        inverted: True
     
   - platform: gpio
     id: button
@@ -82,5 +83,11 @@ sensor:
         name: "CGG1 Humidity"
     battery_level:
         name: "CGG1 Battery Level"
+
+  - platform: ble_rssi
+    mac_address: "58:2D:34:14:2D:74"
+    name: "CGG1 Signal"
+    filters:
+      - throttle: 30s
 
 # 58:2D:34:14:2D:74
