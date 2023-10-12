@@ -1,0 +1,58 @@
+# ESP32-U4WDH (Single core, 160MHz, 4MB embedded flash)
+substitutions:
+  name: elektricity-meter
+  device_description: Landis & Gyr E450
+  friendly_name: Electricity Meter
+
+packages:
+    common: !include 
+        file: ../common.yaml
+        vars: 
+            friendly_name: ${friendly_name}
+
+esphome:
+  name: ${name}
+  comment: ${device_description}
+  platformio_options:
+    board_build.f_cpu: 160000000L
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+    sdkconfig_options:
+      CONFIG_FREERTOS_UNICORE: y
+
+# Enable logging
+logger:
+  baud_rate: 0
+  level: DEBUG
+
+uart:
+    id: u1
+    tx_pin: GPIO01
+    rx_pin: GPIO03
+    baud_rate: 300
+    parity: EVEN
+    data_bits: 7
+    debug:
+        direction: BOTH
+        dummy_receiver: false
+
+external_components:
+    - source: components
+
+irda_meter:
+    id: ir1
+    uart_id: u1
+
+light:
+  - platform: status_led
+    name: "${friendly_name} Led"
+    pin: 
+      number: GPIO0
+      inverted: true
+    on_state:
+        - lambda: |-
+            id(ir1)->get_meter_data();
+
