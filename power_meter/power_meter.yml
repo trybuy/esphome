@@ -1,0 +1,145 @@
+# Detecting chip type... ESP32
+# Chip is ESP32-U4WDH (revision v3.0)
+# Features: WiFi, BT, Dual Core, 240MHz, Embedded Flash, VRef calibration in efuse, Coding Scheme None
+# Crystal is 40MHz
+
+# Uploading stub...
+# Running stub...
+# Stub running...
+# Manufacturer: 20
+# Device: 4016
+# Detected flash size: 4MB
+
+substitutions:
+    name: power-meter
+    device_description: Power Meter
+    friendly_name: Power Meter
+    # Higher value gives lower watt readout
+    current_res: "0.001061"
+    # Lower value gives lower voltage readout
+    voltage_div: "1842"
+  
+packages:
+    common: !include 
+        file: ../common.yaml
+        vars: 
+            friendly_name: ${friendly_name}
+  
+esphome:
+    name: ${name}
+    comment: ${device_description}
+    platformio_options:
+      board_build.f_cpu: 240000000L
+  
+esp32:
+    board: esp32dev
+    framework:
+      type: esp-idf
+  
+# Enable logging
+logger:
+    level: DEBUG
+
+switch:
+  - platform: gpio
+    id: output1
+    pin: GPIO26
+    name: "${friendly_name} Output 1"
+
+binary_sensor:
+  - platform: gpio
+    id: input1
+    name: "${friendly_name} Input 1"
+    pin: GPIO04
+    publish_initial_state: True
+    on_state:
+        then: 
+          - lambda: !lambda |-
+                if (id(input1).state) {
+                    id(output1).turn_on();
+                } else {
+                    id(output1).turn_off();
+                }
+    
+  - platform: gpio
+    id: button
+    pin: 
+        number: GPIO25
+        inverted: True
+        mode:
+            input: true
+            pullup: true
+    name: "${friendly_name} Reset button"
+
+light:
+  - platform: status_led
+    name: "${friendly_name} Led"
+    pin: 
+        number: GPIO00
+        inverted: true
+
+sensor:
+#   - platform: ntc
+#     sensor: temp_resistance_reading
+#     name: "${friendly_name} Temperature"
+#     unit_of_measurement: "°C"
+#     accuracy_decimals: 1
+#     icon: "mdi:thermometer"
+#     calibration:
+#         b_constant: 3350
+#         reference_resistance: 10kOhm
+#         reference_temperature: 298.15K
+
+#   - platform: resistance
+#     id: temp_resistance_reading
+#     sensor: temp_analog_reading
+#     configuration: DOWNSTREAM
+#     resistor: 10kOhm
+
+#   - platform: adc
+#     id: temp_analog_reading
+#     pin: GPIO32
+#     attenuation: 11db
+
+#   - platform: adc
+#     name: "${friendly_name} Relay Supply Voltage"
+#     pin: GPIO33
+#     attenuation: 11db
+#     filters:
+#     - multiply: 16
+
+  - platform: hlw8012
+    model: BL0937
+    sel_pin:
+        number: GPIO23
+        inverted: true
+    cf_pin: GPIO5
+    cf1_pin: GPIO18
+    current_resistor: ${current_res}
+    voltage_divider: ${voltage_div}
+    current:
+        name: "${friendly_name} Energy Current"
+        unit_of_measurement: A
+        accuracy_decimals: 3
+        icon: mdi:flash-outline
+    voltage:
+        name: "${friendly_name} Energy Voltage"
+        unit_of_measurement: V
+        accuracy_decimals: 1
+        icon: mdi:flash-outline
+    power:
+        name: "${friendly_name} Energy Power"
+        unit_of_measurement: W
+        id: power
+        icon: mdi:flash-outline
+
+    change_mode_every: 2
+    update_interval: 10s
+  - platform: total_daily_energy
+    name: "${friendly_name} Energy Daily consumed"
+    power_id: power
+    filters:
+        - multiply: 0.001
+    unit_of_measurement: kWh
+    icon: mdi:clock-alert
+    
