@@ -5,6 +5,7 @@ Meter: Landis + Gyr 450
 ![Alt text](docs/IMG_4881.jpg)
 
 Chip: ESP32-U4WDH
+
 Infrared transmitter: slightly modified Aliexpress line follower board based on TCRT5000  
 
 ![Alt text](docs/IMG_4901.jpg)
