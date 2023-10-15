@@ -1,0 +1,79 @@
+# Detecting chip type... ESP32
+# Chip is ESP32-D0WDQ6-V3 (revision v3.1)
+# Features: WiFi, BT, Dual Core, 240MHz, VRef calibration in efuse, Coding Scheme None
+# Crystal is 40MHz
+# Uploading stub...
+# Running stub...
+# Stub running...
+# Manufacturer: 5e
+# Device: 4016
+# Detected flash size: 4MB
+
+
+substitutions:
+    name: esp32-cam
+    device_description: Camera module
+    friendly_name: Camera module
+  
+packages:
+    common: !include 
+        file: ../common.yaml
+        vars: 
+            friendly_name: ${friendly_name}
+  
+esphome:
+    name: ${name}
+    comment: ${device_description}
+    platformio_options:
+      board_build.f_cpu: 240000000L
+  
+esp32:
+    board: esp32dev
+    framework:
+      type: esp-idf
+  
+# Enable logging
+logger:
+    baud_rate: 9600
+    level: DEBUG
+
+light:
+  - platform: status_led
+    name: "${friendly_name} Led"
+    pin: 
+        number: GPIO33
+        inverted: true
+
+  - platform: binary
+    name: "${friendly_name} Flash Light"
+    output: light_output
+
+output:
+  - id: light_output
+    platform: ledc
+    channel: 2
+    pin: GPIO04
+
+esp32_camera:
+    name: Camera1
+    
+    max_framerate: 1.0fps
+    idle_framerate: 0fps
+    resolution: 1024x768
+    jpeg_quality: 10
+
+    i2c_pins:
+        sda: GPIO26
+        scl: GPIO27
+    vsync_pin: GPIO25
+    href_pin: GPIO23
+    pixel_clock_pin: GPIO22
+    power_down_pin: GPIO32
+
+    external_clock:
+        pin: GPIO0
+        frequency: 10MHz
+    data_pins: [GPIO5, GPIO18, GPIO19, GPIO21, GPIO36, GPIO39, GPIO34, GPIO35]
+    
+    
+

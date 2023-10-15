@@ -44,9 +44,9 @@ async def update(x_value, y_value, y2_value):
 
 
 async def main():
-    with open(os.join(os.path.dirname(__file__), "../secrets.yaml")) as secrets_file:
+    with open(os.path.join(os.path.dirname(__file__), "../secrets.yaml")) as secrets_file:
         secrets = yaml.safe_load(secrets_file)
-    cli = aioesphomeapi.APIClient("121gw.local", 6053, None, noise_psk=secrets["app_key"])
+    cli = aioesphomeapi.APIClient("121gw.local", 6053, None, noise_psk=secrets["api_key"])
 
     await cli.connect(login=True)
 

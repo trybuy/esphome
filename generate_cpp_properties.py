@@ -20,7 +20,6 @@ if platformio_folder_env:
     platformio_folder_rel = (platformio_folder_env, "${env:PLATFORMIO_CORE_DIR}")
 else:
     platformio_folder_rel = os.path.expanduser('~'), "${env:HOME}"
-print(workspace_folder_rel, platformio_folder_rel)
 
 def make_path_relative(path):
     for r in [workspace_folder_rel, platformio_folder_rel]:

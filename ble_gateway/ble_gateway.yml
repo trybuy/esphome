@@ -47,6 +47,15 @@ binary_sensor:
     pin: 
         number: GPIO27
         inverted: True
+    publish_initial_state: True
+    on_state:
+        then: 
+          - lambda: !lambda |-
+                if (id(input1).state) {
+                    id(output1).turn_on();
+                } else {
+                    id(output1).turn_off();
+                }
     
   - platform: gpio
     id: button
