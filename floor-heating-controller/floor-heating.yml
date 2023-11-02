@@ -1,0 +1,145 @@
+# Chip is ESP8266EX
+# Features: WiFi
+# Crystal is 26MHz
+# MAC: d8:bf:c0:0e:bc:7c
+# Uploading stub...
+# Running stub...
+# Stub running...
+# Manufacturer: ef
+# Device: 4016
+# Detected flash size: 4MB
+
+substitutions:
+    name: floor-heating
+    device_description: Floor Heating Controller
+    friendly_name: Floor Heating Controller
+  
+packages:
+    common: !include 
+        file: ../common_no_web.yaml
+        vars: 
+            friendly_name: ${friendly_name}
+  
+esphome:
+    name: ${name}
+    comment: ${device_description}
+  
+esp8266:
+  board: esp12e
+  
+# Enable logging
+logger:
+    baud_rate: 0
+    level: DEBUG
+
+light:
+  - platform: status_led
+    name: "${friendly_name} Led"
+    pin: 
+        number: GPIO02
+        inverted: true
+
+switch:
+  - platform: gpio
+    id: output1
+    pin: GPIO16
+    name: "${friendly_name} Output 1"
+  - platform: gpio
+    id: output2
+    pin: GPIO14
+    name: "${friendly_name} Output 2"
+  - platform: gpio
+    id: output3
+    pin: GPIO12
+    name: "${friendly_name} Output 3"
+  - platform: gpio
+    id: output4
+    pin: GPIO13
+    name: "${friendly_name} Output 4"
+
+binary_sensor:
+  - platform: gpio
+    id: input1
+    name: "${friendly_name} Input 1"
+    publish_initial_state: True
+    pin: 
+      number: GPIO02
+      inverted: true
+    on_state:
+        then: 
+          - lambda: !lambda |-
+                if (id(input1).state) {
+                    id(output1).turn_on();
+                } else {
+                    id(output1).turn_off();
+                }
+  - platform: gpio
+    id: input2
+    name: "${friendly_name} Input 2"
+    publish_initial_state: True
+    pin: 
+      number: GPIO00
+      inverted: true
+    on_state:
+        then: 
+          - lambda: !lambda |-
+                if (id(input2).state) {
+                    id(output2).turn_on();
+                } else {
+                    id(output2).turn_off();
+                }
+  - platform: gpio
+    id: input3
+    name: "${friendly_name} Input 3"
+    publish_initial_state: True
+    pin: 
+      number: GPIO04
+      inverted: true
+    on_state:
+        then: 
+          - lambda: !lambda |-
+                if (id(input3).state) {
+                    id(output3).turn_on();
+                } else {
+                    id(output3).turn_off();
+                }
+  - platform: gpio
+    id: input4
+    name: "${friendly_name} Input 4"
+    publish_initial_state: True
+    pin: 
+      number: GPIO05
+      inverted: true
+    on_state:
+        then: 
+          - lambda: !lambda |-
+                if (id(input4).state) {
+                    id(output4).turn_on();
+                } else {
+                    id(output4).turn_off();
+                }
+
+
+uart:
+    id: u1
+    tx_pin: GPIO01
+    rx_pin: GPIO03
+    baud_rate: 9600
+
+modbus:
+
+sensor:
+  - platform: pzemac
+    current:
+      name: "${friendly_name} Current"
+    voltage:
+      name: "${friendly_name} Voltage"
+    power:
+      name: "${friendly_name} Power"
+    energy:
+      name: "${friendly_name} Energy"
+    frequency:
+      name: "${friendly_name} Frequency"
+    power_factor:
+      name: "${friendly_name} Power Factor"
+    update_interval: 60s

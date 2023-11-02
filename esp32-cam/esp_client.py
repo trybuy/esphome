@@ -75,6 +75,9 @@ async def main():
     # Subscribe to the state changes
     await cli.subscribe_states(change_callback)
 
+    resp = await cli.request_single_image()
+    print(resp)
+
 
 def blocking_main():
     asyncio.set_event_loop(loop)
