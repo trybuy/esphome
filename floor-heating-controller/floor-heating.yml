@@ -63,7 +63,7 @@ binary_sensor:
     name: "${friendly_name} Input 1"
     publish_initial_state: True
     pin: 
-      number: GPIO02
+      number: GPIO00
       inverted: true
     on_state:
         then: 
@@ -78,34 +78,22 @@ binary_sensor:
     name: "${friendly_name} Input 2"
     publish_initial_state: True
     pin: 
-      number: GPIO00
-      inverted: true
-    on_state:
-        then: 
-          - lambda: !lambda |-
-                if (id(input2).state) {
-                    id(output2).turn_on();
-                } else {
-                    id(output2).turn_off();
-                }
-  - platform: gpio
-    id: input3
-    name: "${friendly_name} Input 3"
-    publish_initial_state: True
-    pin: 
       number: GPIO04
       inverted: true
     on_state:
         then: 
           - lambda: !lambda |-
-                if (id(input3).state) {
+                // testing suurtoa
+                if (id(input2).state) {
+                    id(output2).turn_on();
                     id(output3).turn_on();
                 } else {
+                    id(output2).turn_off();
                     id(output3).turn_off();
                 }
   - platform: gpio
-    id: input4
-    name: "${friendly_name} Input 4"
+    id: input3
+    name: "${friendly_name} Input 3"
     publish_initial_state: True
     pin: 
       number: GPIO05
@@ -113,11 +101,26 @@ binary_sensor:
     on_state:
         then: 
           - lambda: !lambda |-
-                if (id(input4).state) {
+                if (id(input3).state) {
                     id(output4).turn_on();
                 } else {
                     id(output4).turn_off();
                 }
+#   - platform: gpio
+#     id: input4
+#     name: "${friendly_name} Input 4"
+#     publish_initial_state: True
+#     pin: 
+#       number: GPIO05
+#       inverted: true
+#     on_state:
+#         then: 
+#           - lambda: !lambda |-
+#                 if (id(input4).state) {
+#                     id(output4).turn_on();
+#                 } else {
+#                     id(output4).turn_off();
+#                 }
 
 
 uart:
@@ -143,3 +146,15 @@ sensor:
     power_factor:
       name: "${friendly_name} Power Factor"
     update_interval: 60s
+  - platform: dallas
+    address: 0x58958a8109646128
+    name: "${friendly_name} Temperature #1"
+  - platform: dallas
+    address: 0xdee2374909646128
+    name: "${friendly_name} Temperature #2"
+
+dallas:
+  - pin: GPIO02
+
+# [17:47:33][D][dallas.sensor:084]:     0x58958a8109646128
+# [17:47:33][D][dallas.sensor:084]:     0xdee2374909646128
