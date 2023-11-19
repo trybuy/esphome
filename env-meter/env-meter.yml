@@ -1,0 +1,50 @@
+# Detecting chip type... ESP8266
+# Chip is ESP8266EX
+# Features: WiFi
+# Crystal is 26MHz
+# MAC: 2c:3a:e8:17:5c:09
+# Uploading stub...
+# Running stub...
+# Stub running...
+# Manufacturer: 5e
+# Device: 6014
+# Detected flash size: 1MB
+
+substitutions:
+    name: env-meter
+    device_description: Environment Controller
+    friendly_name: Environment Controller
+  
+packages:
+    common: !include 
+        file: ../common_no_web.yaml
+        vars: 
+            friendly_name: ${friendly_name}
+  
+esphome:
+    name: ${name}
+    comment: ${device_description}
+  
+esp8266:
+  board: esp01_1m
+  
+# Enable logging
+logger:
+    level: DEBUG
+
+i2c:
+  sda: GPIO00
+  scl: GPIO02
+  scan: true
+  id: bus_a
+
+
+sensor:
+  - platform: scd4x
+    co2:
+      name: "${friendly_name} CO2"
+    temperature:
+      name: "${friendly_name} Temperature"
+    humidity:
+      name: "${friendly_name} Humidity"
+    measurement_mode : low_power_periodic

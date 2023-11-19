@@ -73,6 +73,8 @@ binary_sensor:
                 } else {
                     id(output1).turn_off();
                 }
+    filters:
+        delayed_on_off: 5s
   - platform: gpio
     id: input2
     name: "${friendly_name} Input 2"
@@ -91,6 +93,8 @@ binary_sensor:
                     id(output2).turn_off();
                     id(output3).turn_off();
                 }
+    filters:
+        delayed_on_off: 5s
   - platform: gpio
     id: input3
     name: "${friendly_name} Input 3"
@@ -106,6 +110,8 @@ binary_sensor:
                 } else {
                     id(output4).turn_off();
                 }
+    filters:
+        delayed_on_off: 5s
 #   - platform: gpio
 #     id: input4
 #     name: "${friendly_name} Input 4"
@@ -149,9 +155,13 @@ sensor:
   - platform: dallas
     address: 0x58958a8109646128
     name: "${friendly_name} Temperature #1"
+    filters:
+    - offset: -0.2
   - platform: dallas
     address: 0xdee2374909646128
     name: "${friendly_name} Temperature #2"
+    filters:
+    - offset: 1.1
 
 dallas:
   - pin: GPIO02
