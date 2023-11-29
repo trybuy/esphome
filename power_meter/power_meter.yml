@@ -35,6 +35,8 @@ esp32:
     board: esp32dev
     framework:
       type: esp-idf
+      sdkconfig_options:
+        CONFIG_FREERTOS_UNICORE: y
   
 # Enable logging
 logger:
@@ -142,4 +144,34 @@ sensor:
         - multiply: 0.001
     unit_of_measurement: kWh
     icon: mdi:clock-alert
+
+  - platform: template
+    id: temp_sensor
+    name: "${friendly_name} 121gw Temperature"
+    unit_of_measurement: "°C"
+    device_class: "temperature"
+    state_class: "measurement"
+    accuracy_decimals: 1
+
+esp32_ble_tracker:
+   scan_parameters:
+     active: False
+
+ble_client:
+    - mac_address: 00:00:00:00:00:00
+      id: m_121gw
+
+external_components:
+      source: "../multimeter121gw/components"
+
+multimeter_121gw:
+  mac_address: 88:6B:0F:81:A9:8D
+  on_packet_received:
+    then:
+      - lambda: |-
+          if (p.mode == esphome::multimeter_121gw::Temp) {
+            id(temp_sensor).publish_state(float(p.value) / 10);
+          }
+
+
     

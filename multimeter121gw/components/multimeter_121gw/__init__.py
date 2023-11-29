@@ -1,7 +1,7 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome import automation
-from esphome.const import (CONF_ID, CONF_TRIGGER_ID)
+from esphome.const import (CONF_ID, CONF_TRIGGER_ID, CONF_MAC_ADDRESS)
 from esphome.components import esp32_ble_tracker
 from esphome.components import ble_client
 
@@ -20,6 +20,7 @@ CONF_ON_PACKET_RECEIVED = "on_packet_received"
 
 CONFIG_SCHEMA = cv.Schema({
     cv.GenerateID(): cv.declare_id(component),
+    cv.Optional(CONF_MAC_ADDRESS): cv.mac_address,
     cv.Optional(CONF_ON_PACKET_RECEIVED): automation.validate_automation(
         {
             cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(PacketReceivedTrigger),
@@ -33,6 +34,9 @@ async def to_code(config):
     await cg.register_component(var, config)
     await esp32_ble_tracker.register_ble_device(var, config)
     cg.add(var.set_client(cl))
+    mac_address = config.get(CONF_MAC_ADDRESS, None)
+    if mac_address is not None:
+        cg.add(var.set_address(mac_address.as_hex))
     for conf in config.get(CONF_ON_PACKET_RECEIVED, []):
         trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
         await automation.build_automation(trigger, [(PacketConstRef, "p")], conf)

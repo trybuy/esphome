@@ -65,7 +65,10 @@ namespace multimeter_121gw {
     }
 
     bool Multimeter121GW::parse_device(const esphome::esp32_ble_tracker::ESPBTDevice &device)  {
-        if (device.get_name() != "121GW" || !client_) {
+        if (!client_) {
+            return false;
+        }
+        if (device.get_name() != "121GW" && address_ != device.address_uint64()) {
             return false;
         }
         ESP_LOGD(TAG, "Found 121GW device: %s", device.address_str().c_str());

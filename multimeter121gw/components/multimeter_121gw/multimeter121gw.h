@@ -42,7 +42,7 @@ private:
 
 class Multimeter121GW : public Component, public esphome::esp32_ble_tracker::ESPBTDeviceListener {
 public:
-    Multimeter121GW(): client_(0) {}
+    Multimeter121GW(): client_(0), address_(0) {}
 
     void setup() override {};
     void loop() override {};
@@ -58,9 +58,12 @@ public:
     void register_listener(PacketListener* listener) {
         client_node_.register_listener(listener);
     }
+
+    void set_address(uint64_t address) { address_ = address; }
 private:
     esphome::ble_client::BLEClient* client_;
     Multimeter121GWNode client_node_;
+    uint64_t address_;
 };
 
 class PacketReceivedTrigger :  public Trigger<const packet&>, public PacketListener {
