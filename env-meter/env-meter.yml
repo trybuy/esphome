@@ -47,4 +47,7 @@ sensor:
       name: "${friendly_name} Temperature"
     humidity:
       name: "${friendly_name} Humidity"
+    temperature_offset: 16.2
+    altitude_compensation: 56m
+    #update_interval: 20s
     measurement_mode : low_power_periodic
