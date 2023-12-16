@@ -1,0 +1,39 @@
+# Detecting chip type... ESP8266
+# Chip is ESP8266EX
+# Features: WiFi
+# Crystal is 26MHz
+# MAC: 50:02:91:78:94:08
+# Uploading stub...
+# Running stub...
+# Stub running...
+# Manufacturer: 5e
+# Device: 4016
+# Detected flash size: 4MB
+
+substitutions:
+    name: relay
+    device_description: Relay
+    friendly_name: Relay
+  
+packages:
+    common: !include 
+        file: ../common_no_web.yaml
+        vars: 
+            friendly_name: ${friendly_name}
+  
+esphome:
+    name: ${name}
+    comment: ${device_description}
+  
+esp8266:
+  board: esp01_1m
+  
+# Enable logging
+logger:
+    level: DEBUG
+
+switch:
+  - platform: gpio
+    id: output1
+    pin: GPIO04
+    name: "${friendly_name} Output 1"
