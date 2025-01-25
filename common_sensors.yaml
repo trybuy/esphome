@@ -1,0 +1,28 @@
+
+wifi:
+    ssid: !secret wifi_ssid
+    password: !secret wifi_password
+
+web_server:
+    port: 80
+    auth:
+        username: !secret web_server_username
+        password: !secret web_server_password
+
+# Enable Home Assistant API
+api:
+    id: api_server
+    encryption:
+      key: !secret api_key
+  
+ota:
+    platform: esphome
+    password: !secret ota_password
+
+time:
+    - platform: homeassistant
+      id: time_homeassistant
+    
+switch:
+    - platform: restart
+      name: "${friendly_name} Restart"

@@ -1,0 +1,98 @@
+# Detecting chip type... ESP32-C6
+# Chip is ESP32-C6 (QFN40) (revision v0.1)
+# Features: WiFi 6, BT 5, IEEE802.15.4
+# Crystal is 40MHz
+# MAC: f0:f5:bd:ff:fe:01:e8:94
+# BASE MAC: f0:f5:bd:01:e8:94
+# MAC_EXT: ff:fe
+# Uploading stub...
+# Running stub...
+# Stub running...
+# Manufacturer: c8
+# Device: 4016
+# Detected flash size: 4MB     
+# Hard resetting via RTS pin...
+
+
+substitutions:
+    name: nibe-controller-v2
+    device_description: Nibe-Controller
+    friendly_name:  Nibe-Controller
+  
+packages:
+    common: !include 
+        file: ../common2.yaml
+        vars: 
+            friendly_name: ${friendly_name}
+  
+esphome:
+    name: ${name}
+    comment: ${device_description}
+
+esp32:
+    board: esp32-c6-devkitm-1
+    framework:
+      type: esp-idf
+  
+logger:
+    level: DEBUG
+
+external_components:
+  - source: components
+
+nibe_controller:
+  id: test
+  update_interval: 5s
+  voltage:
+    name: '${friendly_name} Consumption: Voltage'
+  power:
+    name: '${friendly_name} Consumption: Power'
+  energy:
+    name: '${friendly_name} Consumption: Energy'
+  sel_pin: 
+    number: GPIO15
+    ignore_strapping_warning: true 
+  phase1: 
+    cf_pin: GPIO22
+    cf1_pin: GPIO23
+    current:
+        name: '${friendly_name} Consumption: Phase 1 Current'
+  phase2: 
+    cf_pin: GPIO21
+    cf1_pin: GPIO20
+    voltage_coefficient: 0.1572
+    current:
+        name: '${friendly_name} Consumption: Phase 2 Current'
+  phase3: 
+    cf_pin: GPIO19
+    cf1_pin: GPIO18
+    voltage_coefficient: 0.156
+    current:
+        name: '${friendly_name} Consumption: Phase 3 Current'
+
+light:
+  - platform: status_led
+    name: "${friendly_name} Led"
+    pin: 
+        number: GPIO02
+
+switch:
+  - platform: gpio
+    id: output1
+    pin: GPIO13
+    name: "${friendly_name} Control: Climate"
+  - platform: gpio
+    id: output2
+    pin: GPIO12
+    name: "${friendly_name} Control: A"
+  - platform: gpio
+    id: output3
+    pin: GPIO11
+    name: "${friendly_name} Control: B"
+
+binary_sensor:
+  - platform: gpio
+    id: input11
+    name: "${friendly_name} Control: Alarm"
+    pin: 
+        number: GPIO10

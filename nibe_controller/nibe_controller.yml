@@ -1,0 +1,75 @@
+# Detecting chip type... ESP32
+# Chip is ESP32-D0WD-V3 (revision v3.1)
+# Features: WiFi, BT, Dual Core, 240MHz, VRef calibration in efuse, Coding Scheme None
+# Crystal is 40MHz
+# MAC: 08:d1:f9:c7:14:b0
+# Uploading stub...
+# Running stub...
+# Stub running...
+# Manufacturer: 5e
+# Device: 4016
+# Detected flash size: 4MB
+
+
+substitutions:
+    name: nibe-controller
+    device_description: Nibe Controller
+    friendly_name: Nibe Controller
+  
+packages:
+    common: !include 
+        file: ../common2.yaml
+        vars: 
+            friendly_name: ${friendly_name}
+  
+esphome:
+    name: ${name}
+    comment: ${device_description}
+  
+esp32:
+    board: esp32dev
+    framework:
+      type: esp-idf
+  
+# Enable logging
+logger:
+    level: DEBUG
+
+light:
+  - platform: status_led
+    name: "${friendly_name} Led"
+    pin: 
+        number: GPIO12
+
+switch:
+  - platform: gpio
+    id: output11
+    pin: GPIO16
+    name: "${friendly_name} Climate 1"
+  - platform: gpio
+    id: output12
+    pin: GPIO04
+    name: "${friendly_name} Climate 2"
+  - platform: gpio
+    id: output13
+    pin: GPIO17
+    name: "${friendly_name} Tariff A"
+  - platform: gpio
+    id: output14
+    pin: GPIO05
+    name: "${friendly_name} Tariff B"
+
+binary_sensor:
+  - platform: gpio
+    id: input11
+    name: "${friendly_name} Alarm"
+    pin: 
+        number: GPIO36
+  - platform: gpio
+    id: input12
+    name: "${friendly_name} Input 12"
+    pin: 
+        number: GPIO39
+    
+    
+

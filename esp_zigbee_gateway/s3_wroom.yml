@@ -1,0 +1,119 @@
+# Detecting chip type... ESP32-S3
+# Chip is ESP32-S3 (QFN56) (revision v0.2)
+# Features: WiFi, BLE, Embedded PSRAM 2MB (AP_3v3)
+# Crystal is 40MHz
+# MAC: 34:cd:b0:1d:da:a0
+# Uploading stub...
+# Running stub...
+# Stub running...
+# Manufacturer: c8
+# Device: 4017
+# Detected flash size: 8MB
+# Flash type set in eFuse: quad (4 data lines)
+
+
+substitutions:
+    name: zigbee-gw-s3
+    device_description: Z_GW S3 module
+    friendly_name: Z_GW S3 module
+  
+packages:
+    common: !include 
+        file: ../common2.yaml
+        vars: 
+            friendly_name: ${friendly_name}
+  
+esphome:
+    name: ${name}
+    comment: ${device_description}
+  
+esp32:
+    board: esp32s3camlcd
+#    variant: ESP32S3
+    framework:
+      type: esp-idf
+  
+# Enable logging
+logger:
+    level: DEBUG
+
+# uart:
+#   id: bl
+#   tx_pin: GPIO43
+#   rx_pin: GPIO44
+#   baud_rate: 4800
+
+# switch:
+#   - platform: template
+#     id: test
+#     name: "${friendly_name} Test"
+#     turn_on_action:
+#         then:
+#             - uart.write:
+#                 id: bl
+#                 data: [0x58, 0xAA]
+#   - platform: template
+#     id: test_reset
+#     name: "${friendly_name} Test reset"
+#     turn_on_action:
+#         then:
+#             - uart.write:
+#                 id: bl
+#                 data: "00000000000000000000000000000000000"
+
+# sensor:
+#   - platform: bl0942
+#     uart_id: bl 
+#     voltage:
+#       name: 'BL0942 Voltage'
+#     current:
+#       name: 'BL0942 Current'
+#     power:
+#       name: 'BL0942 Power'
+#     energy:
+#       name: 'BL0942 Energy'
+#     frequency:
+#       name: "BL0942 Frequency"
+
+
+sensor:
+  - platform: hlw8012
+    model: BL0937
+    id: bl1
+    #voltage_divider: 2512
+    voltage_divider: 1980
+    current_resistor: 0.00193
+    sel_pin: 
+        number: GPIO42
+        inverted: true
+    cf_pin: GPIO38
+    cf1_pin: GPIO40
+    current:
+      name: "BL0937 Current"
+    voltage:
+      name: "BL0937 Voltage"
+    power:
+      name: "BL0937 Power"
+    update_interval: 10s
+    initial_mode: VOLTAGE
+    change_mode_every: 100000
+  - platform: hlw8012
+    model: BL0937
+    id: bl2
+    #voltage_divider: 2512
+    voltage_divider: 1995
+    current_resistor: 0.00193
+    sel_pin: 
+        number: GPIO42
+        inverted: true
+    cf_pin: GPIO36
+    cf1_pin: GPIO45
+    current:
+      name: "BL0937 Current 2"
+    voltage:
+      name: "BL0937 Voltage 2"
+    power:
+      name: "BL0937 Power 2"
+    update_interval: 10s
+    initial_mode: VOLTAGE
+    change_mode_every: 100000

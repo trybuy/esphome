@@ -1,0 +1,142 @@
+# Detecting chip type... ESP32-C6
+# Chip is ESP32-C6 (QFN40) (revision v0.1)
+# Features: WiFi 6, BT 5, IEEE802.15.4
+# Crystal is 40MHz
+# MAC: f0:f5:bd:ff:fe:01:e8:90
+# BASE MAC: f0:f5:bd:01:e8:90
+# MAC_EXT: ff:fe
+# Uploading stub...
+# Running stub...
+# Stub running...
+# Manufacturer: c8
+# Device: 4016
+# Detected flash size: 4MB  
+
+
+substitutions:
+    name: heating-controller
+    device_description: Heating Controller V2
+    friendly_name: Heating Controller V2
+  
+packages:
+    common: !include 
+        file: ../common2.yaml
+        vars: 
+            friendly_name: ${friendly_name}
+  
+esphome:
+    name: ${name}
+    comment: ${device_description}
+  
+esp32:
+    board: esp32-c6-devkitm-1
+    framework:
+      type: esp-idf
+  
+# Enable logging
+logger:
+    level: DEBUG
+
+light:
+  - platform: status_led
+    name: "${friendly_name} Led"
+    pin: 
+        number: GPIO18
+
+uart:
+   id: bl
+   tx_pin: GPIO05
+   rx_pin: GPIO04
+   baud_rate: 4800
+
+switch:
+  - platform: gpio
+    id: output1
+    pin: GPIO23
+    name: "${friendly_name} Output 1"
+  - platform: gpio
+    id: output2
+    pin: GPIO22
+    name: "${friendly_name} Output 2"
+  - platform: gpio
+    id: output3
+    pin: GPIO21
+    name: "${friendly_name} Output 3"
+  - platform: gpio
+    id: output4
+    pin: GPIO20
+    name: "${friendly_name} Output 4"
+  - platform: gpio
+    id: output5
+    pin: GPIO19
+    name: "${friendly_name} Output 5"
+
+binary_sensor:
+  - platform: gpio
+    id: input1
+    name: "${friendly_name} Input 1"
+    pin: 
+        number: GPIO10
+        inverted: true
+  - platform: gpio
+    id: input2
+    name: "${friendly_name} Input 2"
+    pin: 
+        number: GPIO11
+        inverted: true
+  - platform: gpio
+    id: input3
+    name: "${friendly_name} Input 3"
+    pin: 
+        number: GPIO12
+        inverted: true
+  - platform: gpio
+    id: input4
+    name: "${friendly_name} Input 4"
+    pin: 
+        number: GPIO13
+        inverted: true
+  - platform: gpio
+    id: input5
+    name: "${friendly_name} Input 5"
+    pin: 
+        number: GPIO07
+        inverted: true
+    
+one_wire:
+   - platform: gpio
+     pin: GPIO01
+
+sensor:
+  - platform: dallas_temp
+    address: 0x34000009c772e428
+    name: "${friendly_name} Temperature #1"
+    update_interval: 10s
+  - platform: dallas_temp
+    address: 0x9608658309646128
+    name: "${friendly_name} Temperature #2"
+    update_interval: 10s
+    filters:
+    - offset: -0.35
+
+  - platform: bl0942
+    uart_id: bl 
+    voltage_reference: 15770
+    current_reference: 235000
+    voltage:
+      name: 'BL0942 Voltage'
+    current:
+      name: 'BL0942 Current'
+    power:
+      name: 'BL0942 Power'
+    energy:
+      name: 'BL0942 Energy'
+    update_interval: 10s
+
+
+# Found devices:
+# 0xcbd4698009646128 (DS18B20)
+# 0xfa00000400c7c928 (DS18B20)
+
+#  0x34000009c772e428 (DS18B20) - original 
+#  0x9608658309646128 (DS18B20)
