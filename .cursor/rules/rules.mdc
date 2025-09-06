@@ -1,7 +1,11 @@
+---
+alwaysApply: true
+---
+
 # ESPHome Project Cursor Rules
 
 ## Python Environment
-- Always activate the ESPHome Python virtual environment before running any ESPHome commands
+- Always activate the ESPHome Python virtual environment before running first commands in terminal
 - Use: `c:/Users/sergei/Documents/esphome/.venv/Scripts/Activate.ps1`
 - This ensures the correct ESPHome version and dependencies are available
 
@@ -9,7 +13,6 @@
 - To compile any ESPHome project, use: `esphome compile <yml_file>`
 - Example: `esphome compile reflow-controller/reflow-controller.yml`
 - Always run from the main esphome directory (C:\Users\sergei\Documents\esphome)
-- Ensure secrets.yaml is available in the same directory as the yml file or in the main directory
 
 ## Project Structure
 - ESPHome configurations are in subdirectories (e.g., reflow-controller/, nibe-controller/)
@@ -17,19 +20,4 @@
 - Common configurations are shared via common.yaml, common2.yaml, etc.
 - Custom components are in components/ subdirectories
 
-## File Naming
-- Main configuration files: <project-name>.yml
-- Test configurations: test-<description>.yml
-- Custom configurations: <project-name>-<variant>.yml
-
-## Dependencies
-- ESPHome projects may include custom components in components/ folders
-- Custom components require proper __init__.py, .h, and .cpp files
-- Library dependencies are specified in the yml files under esphome.libraries
-
-## Common Issues
-- Duplicate sensor/switch/light keys in YAML cause compilation errors
-- GPIO pin conflicts (especially strapping pins like GPIO2, GPIO4, GPIO12)
-- Missing secrets.yaml file
-- Incorrect Python environment activation
 
