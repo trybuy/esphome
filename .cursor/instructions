@@ -1,0 +1,57 @@
+# ESPHome Project Instructions
+
+## Before Any ESPHome Operations
+
+1. **Activate Python Environment First**
+   ```powershell
+   c:/Users/sergei/Documents/esphome/.venv/Scripts/Activate.ps1
+   ```
+
+2. **Verify Environment**
+   ```powershell
+   esphome version
+   ```
+
+## Compiling ESPHome Projects
+
+**Standard Command:**
+```powershell
+esphome compile <yml_file_path>
+```
+
+**Examples:**
+- `esphome compile reflow-controller/reflow-controller.yml`
+- `esphome compile nibe-controller/nibe_controller-v2.yml`
+- `esphome compile test-basic.yml`
+
+## Project Structure
+
+```
+esphome/
+├── .cursor/                    # Cursor IDE rules and instructions
+├── .venv/                      # Python virtual environment
+├── secrets.yaml                # Shared secrets file
+├── common.yaml                 # Common ESPHome configuration
+├── common2.yaml                # Alternative common configuration
+├── reflow-controller/          # Reflow controller project
+│   ├── reflow-controller.yml   # Main configuration
+│   ├── components/             # Custom components
+│   └── web/                    # Custom web files
+├── nibe-controller/            # Nibe controller project
+└── [other-projects]/           # Additional ESPHome projects
+```
+
+## Troubleshooting
+
+- **Environment Issues**: Always activate the virtual environment first
+- **Compilation Errors**: Check for duplicate keys in YAML files
+- **Missing Secrets**: Ensure secrets.yaml exists in the project directory
+- **GPIO Warnings**: Avoid using strapping pins (GPIO2, GPIO4, GPIO12, etc.)
+
+## Custom Components
+
+Custom ESPHome components require:
+- `__init__.py` - Component registration
+- `component_name.h` - Header file
+- `component_name.cpp` - Implementation
+- Proper library dependencies in yml files
