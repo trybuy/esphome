@@ -32,3 +32,4 @@
 - GPIO pin conflicts (especially strapping pins like GPIO2, GPIO4, GPIO12)
 - Missing secrets.yaml file
 - Incorrect Python environment activation
+

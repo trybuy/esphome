@@ -55,3 +55,4 @@ Custom ESPHome components require:
 - `component_name.h` - Header file
 - `component_name.cpp` - Implementation
 - Proper library dependencies in yml files
+
