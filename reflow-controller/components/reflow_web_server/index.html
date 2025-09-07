@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Reflow Controller</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/modules/boost.js"></script>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Reflow Controller</h1>
+            <div class="subtitle">Advanced Temperature Monitoring & Control</div>
+        </div>
+        
+        <div class="dashboard">
+            <div class="status-grid" id="statusGrid">
+                <div class="status-card switch">
+                    <button class="switch-button" id="reflowSwitchBtn" onclick="toggleReflowSwitch()">
+                        <span id="switchState">OFF</span>
+                    </button>
+                </div>
+                <div class="status-card temperature">
+                    <div class="status-value" id="currentTemp">-- &deg;C</div>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <div class="chart-title">Temperature Profile</div>
+                <div id="temperatureChart"></div>
+            </div>
+        </div>
+    </div>
+    <script src="/script.js"></script>
+</body>
+</html>

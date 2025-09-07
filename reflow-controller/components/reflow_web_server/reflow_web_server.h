@@ -47,9 +47,6 @@ protected:
     bool authenticate_request(httpd_req_t *req);
     void on_temperature_update(float state);
     
-    const char* get_index_html();
-    const char* get_style_css();
-    const char* get_script_js();
     
     httpd_handle_t server_{nullptr};
     uint16_t port_{80};

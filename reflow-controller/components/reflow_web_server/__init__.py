@@ -10,6 +10,7 @@ from esphome.const import (
 from esphome.components import sensor
 from esphome.components import switch
 from esphome.core import CORE
+import os
 
 DEPENDENCIES = ["network"]
 
@@ -37,6 +38,8 @@ CONFIG_SCHEMA = cv.Schema(
 ).extend(cv.COMPONENT_SCHEMA)
 
 
+
+
 async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
@@ -56,5 +59,13 @@ async def to_code(config):
         cg.add(var.set_reflow_switch(reflow_switch))
     
     cg.add(var.set_update_interval(config[CONF_UPDATE_INTERVAL]))
+
+    # Register the PlatformIO pre-script to generate web assets before compilation
+    component_dir = os.path.dirname(os.path.abspath(__file__))
+    script_path = os.path.join(component_dir, "gen_web_assets.py")
+    
+    # Add the pre-script to PlatformIO options automatically
+    cg.add_platformio_option("extra_scripts", [f"pre:{script_path}"])
+    # cg.add_platformio_option("extra_scripts", ["pre:../../../components/reflow_web_server/gen_web_assets.py"])
 
     # No external libraries needed - using ESP-IDF's built-in HTTP server
