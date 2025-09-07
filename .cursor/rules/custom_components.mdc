@@ -1,0 +1,76 @@
+---
+alwaysApply: false
+---
+
+# ESPHome Custom Component Development Guide
+
+
+## Custom Component Architecture
+
+### File Structure
+Custom components follow this mandatory structure:
+```
+project-name/
+├── components/
+│   └── component_name/
+│       ├── __init__.py      # Python integration (required)
+│       ├── component.h      # C++ header (required)
+│       └── component.cpp    # C++ implementation (required)
+└── project-name.yml         # Main configuration
+```
+
+Use existing components as reference:
+- `nibe-controller` - Complex multi-phase sensor component
+- `irda_meter` - UART-based component with automation
+- `multimeter_121gw` - BLE component with triggers
+
+
+### Configuration Integration
+
+#### YAML Configuration
+Components are used in YAML files with:
+```yaml
+external_components:
+  - source: components  # Points to local components directory
+
+component_name:
+  id: component_instance
+  # Component-specific configuration
+```
+
+# ESPHome Custom Component Development Guide
+
+
+## Custom Component Architecture
+
+### File Structure
+Custom components follow this mandatory structure:
+```
+project-name/
+├── components/
+│   └── component_name/
+│       ├── __init__.py      # Python integration (required)
+│       ├── component.h      # C++ header (required)
+│       └── component.cpp    # C++ implementation (required)
+└── project-name.yml         # Main configuration
+```
+
+Use existing components as reference:
+- `nibe-controller` - Complex multi-phase sensor component
+- `irda_meter` - UART-based component with automation
+- `multimeter_121gw` - BLE component with triggers
+
+
+### Configuration Integration
+
+#### YAML Configuration
+Components are used in YAML files with:
+```yaml
+external_components:
+  - source: components  # Points to local components directory
+
+component_name:
+  id: component_instance
+  # Component-specific configuration
+```
+
