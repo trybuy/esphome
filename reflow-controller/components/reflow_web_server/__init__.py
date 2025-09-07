@@ -59,6 +59,14 @@ async def to_code(config):
         cg.add(var.set_reflow_switch(reflow_switch))
     
     cg.add(var.set_update_interval(config[CONF_UPDATE_INTERVAL]))
+    
+    # Try to find and set the time component automatically
+    for comp in CORE.config.get("time", []):
+        time_comp_id = comp.get(CONF_ID)
+        if time_comp_id:
+            time_comp = await cg.get_variable(time_comp_id)
+            cg.add(var.set_time_component(time_comp))
+            break  # Use the first time component found
 
     # Register the PlatformIO pre-script to generate web assets before compilation
     component_dir = os.path.dirname(os.path.abspath(__file__))

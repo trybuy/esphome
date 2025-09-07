@@ -29,7 +29,16 @@ class ReflowDashboard {
             title: { text: null },
             xAxis: {
                 type: 'datetime',
-                title: { text: 'Time' }
+                title: { text: 'Time' },
+                dateTimeLabelFormats: {
+                    second: '%H:%M:%S',
+                    minute: '%H:%M',
+                    hour: '%H:%M',
+                    day: '%m-%d',
+                    week: '%m-%d',
+                    month: '%Y-%m',
+                    year: '%Y'
+                }
             },
             yAxis: {
                 title: { text: 'Temperature (&deg;C)' },
@@ -63,27 +72,44 @@ class ReflowDashboard {
         });
     }
     
-    updateTemperatureData() {
-        fetch('/temperature_data')
+    updateData() {
+        fetch('/data')
             .then(response => response.json())
             .then(data => {
-                if (data && data.length > 0) {
-                    this.temperatureChart.series[0].setData(data, true);
+                // Update temperature chart and display
+                if (data.temperature_data && data.temperature_data.length > 0) {
+                    this.temperatureChart.series[0].setData(data.temperature_data, true);
                     
-                    const latest = data[data.length - 1];
+                    const latest = data.temperature_data[data.temperature_data.length - 1];
                     if (latest) {
                         document.getElementById('currentTemp').innerHTML = latest[1].toFixed(1) + ' &deg;C';
                     }
                 }
+                
+                // Update switch status
+                const btn = document.getElementById('reflowSwitchBtn');
+                const stateSpan = document.getElementById('switchState');
+                
+                if (btn && stateSpan) {
+                    if (data.switch_state) {
+                        btn.classList.add('on');
+                        stateSpan.textContent = 'ON';
+                    } else {
+                        btn.classList.remove('on');
+                        stateSpan.textContent = 'OFF';
+                    }
+                }
             })
             .catch(error => {
-                console.error('Error fetching temperature data:', error);
+                console.error('Error fetching data:', error);
             });
     }
     
     startDataUpdates() {
-        this.updateTemperatureData();
-        setInterval(() => this.updateTemperatureData(), this.updateInterval);
+        this.updateData();
+        
+        // Update both temperature and switch data together
+        setInterval(() => this.updateData(), this.updateInterval);
     }
 }
 

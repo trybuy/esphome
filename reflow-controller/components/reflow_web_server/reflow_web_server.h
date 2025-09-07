@@ -3,6 +3,7 @@
 #include "esphome/core/component.h"
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/switch/switch.h"
+#include "esphome/components/time/real_time_clock.h"
 
 #ifdef USE_ESP32
 #include "esp_http_server.h"
@@ -16,7 +17,7 @@ namespace esphome {
 namespace reflow_web_server {
 
 struct TemperatureDataPoint {
-    uint32_t timestamp;
+    std::string iso_timestamp;
     float temperature;
 };
 
@@ -35,10 +36,11 @@ public:
     void set_temperature_sensor(sensor::Sensor *sensor) { temperature_sensor_ = sensor; }
     void set_reflow_switch(switch_::Switch *reflow_switch) { reflow_switch_ = reflow_switch; }
     void set_update_interval(uint32_t update_interval) { update_interval_ = update_interval; }
+    void set_time_component(time::RealTimeClock *time_component) { time_component_ = time_component; }
     
 protected:
     static esp_err_t index_handler(httpd_req_t *req);
-    static esp_err_t temperature_data_handler(httpd_req_t *req);
+    static esp_err_t data_handler(httpd_req_t *req);
     static esp_err_t style_handler(httpd_req_t *req);
     static esp_err_t script_handler(httpd_req_t *req);
     static esp_err_t switch_control_handler(httpd_req_t *req);
@@ -55,6 +57,7 @@ protected:
     
     sensor::Sensor *temperature_sensor_{nullptr};
     switch_::Switch *reflow_switch_{nullptr};
+    time::RealTimeClock *time_component_{nullptr};
     uint32_t update_interval_{1000};
     uint32_t last_update_{0};
     

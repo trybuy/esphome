@@ -40,13 +40,13 @@ void ReflowWebServer::setup() {
         };
         httpd_register_uri_handler(this->server_, &index_uri);
         
-        httpd_uri_t temperature_data_uri = {
-            .uri = "/temperature_data",
+        httpd_uri_t data_uri = {
+            .uri = "/data",
             .method = HTTP_GET,
-            .handler = temperature_data_handler,
+            .handler = data_handler,
             .user_ctx = this
         };
-        httpd_register_uri_handler(this->server_, &temperature_data_uri);
+        httpd_register_uri_handler(this->server_, &data_uri);
         
         httpd_uri_t style_uri = {
             .uri = "/style.css",
@@ -72,6 +72,7 @@ void ReflowWebServer::setup() {
         };
         httpd_register_uri_handler(this->server_, &switch_control_uri);
         
+        
         ESP_LOGCONFIG(TAG, "Web Server started on port %u", this->port_);
     } else {
         ESP_LOGE(TAG, "Failed to start HTTP server");
@@ -81,6 +82,12 @@ void ReflowWebServer::setup() {
     if (this->temperature_sensor_ != nullptr) {
         this->temperature_sensor_->add_on_state_callback([this](float state) {
             this->on_temperature_update(state);
+        });
+    }
+    
+    if (this->reflow_switch_ != nullptr) {
+        this->reflow_switch_->add_on_state_callback([this](bool state) {
+            ESP_LOGD(TAG, "Switch state changed to: %s", state ? "ON" : "OFF");
         });
     }
 }
@@ -121,7 +128,7 @@ esp_err_t ReflowWebServer::index_handler(httpd_req_t *req) {
     return ESP_OK;
 }
 
-esp_err_t ReflowWebServer::temperature_data_handler(httpd_req_t *req) {
+esp_err_t ReflowWebServer::data_handler(httpd_req_t *req) {
     ReflowWebServer* server = static_cast<ReflowWebServer*>(req->user_ctx);
     
     if (!server->authenticate_request(req)) {
@@ -130,7 +137,16 @@ esp_err_t ReflowWebServer::temperature_data_handler(httpd_req_t *req) {
         return ESP_OK;
     }
     
-    std::string json = server->get_temperature_data_json();
+    // Combine temperature data and switch status into single JSON response
+    std::string temperature_data = server->get_temperature_data_json();
+    bool switch_state = (server->reflow_switch_ && server->reflow_switch_->state);
+    
+    std::string json = "{";
+    json += "\"temperature_data\":" + temperature_data + ",";
+    json += "\"switch_state\":";
+    json += switch_state ? "true" : "false";
+    json += "}";
+    
     httpd_resp_set_type(req, "application/json");
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     httpd_resp_send(req, json.c_str(), json.length());
@@ -190,6 +206,7 @@ esp_err_t ReflowWebServer::switch_control_handler(httpd_req_t *req) {
     httpd_resp_send(req, response.c_str(), response.length());
     return ESP_OK;
 }
+
 #endif
 
 std::string ReflowWebServer::get_temperature_data_json() {
@@ -203,9 +220,8 @@ std::string ReflowWebServer::get_temperature_data_json() {
         }
         first = false;
         
-        // Convert to JavaScript timestamp (milliseconds since epoch)
-        uint64_t js_timestamp = static_cast<uint64_t>(point.timestamp) * 1000;
-        json << "[" << js_timestamp << "," << point.temperature << "]";
+        // Return ISO timestamp as string with temperature value
+        json << "[\"" << point.iso_timestamp << "\"," << point.temperature << "]";
     }
     
     json << "]";
@@ -244,10 +260,27 @@ void ReflowWebServer::on_temperature_update(float state) {
         return;  // Skip NaN values
     }
     
-    uint32_t now = millis() / 1000;  // Convert to seconds
+    std::string iso_timestamp;
+    
+    // Try to get actual time using ESPHome time component
+    if (this->time_component_ != nullptr) {
+        auto time_now = this->time_component_->now();
+        if (time_now.is_valid()) {
+            // Convert ESPHome time to ISO string format
+            iso_timestamp = time_now.strftime("%Y-%m-%dT%H:%M:%S");
+        } else {
+            // Fallback to relative time if not synced yet
+            uint32_t millis_time = millis() / 1000;
+            iso_timestamp = "T+" + std::to_string(millis_time) + "s";
+        }
+    } else {
+        // Fallback to relative time if time component is not available
+        uint32_t millis_time = millis() / 1000;
+        iso_timestamp = "T+" + std::to_string(millis_time) + "s";
+    }
     
     // Add new data point
-    this->temperature_data_.push_back({now, state});
+    this->temperature_data_.push_back({iso_timestamp, state});
     
     // Remove old data points to keep memory usage reasonable
     while (this->temperature_data_.size() > MAX_DATA_POINTS) {
