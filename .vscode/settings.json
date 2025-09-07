@@ -1,0 +1,19 @@
+{
+    "terminal.integrated.profiles.windows": {
+        "Venv PowerShell": {
+        // Choose one:
+        // Windows PowerShell:
+        "path": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        // PowerShell 7 (pwsh):
+        // "path": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+
+        "args": [
+            "-NoLogo",
+            "-NoExit",
+            "-Command",
+            "if (Test-Path .venv\\Scripts\\Activate.ps1) { & .venv\\Scripts\\Activate.ps1 }"
+        ]
+        }
+    },
+    "terminal.integrated.defaultProfile.windows": "Venv PowerShell",
+}
