@@ -1,0 +1,61 @@
+# Detecting chip type... ESP32
+# Chip is ESP32-D0WD-V3 (revision v3.1)
+# Features: WiFi, BT, Dual Core, 240MHz, VRef calibration in efuse, Coding Scheme None
+# Crystal is 40MHz
+# MAC: 08:d1:f9:c7:14:b0
+# Uploading stub...
+# Running stub...
+# Stub running...
+# Manufacturer: 5e
+# Device: 4016
+# Detected flash size: 4MB
+
+
+substitutions:
+    name: reflow-controller
+    device_description: Reflow Controller
+    friendly_name: Reflow Controller
+  
+packages:
+    common: !include 
+        file: ../common2.yaml
+        vars: 
+            friendly_name: ${friendly_name}
+  
+esphome:
+    name: ${name}
+    comment: ${device_description}
+  
+esp32:
+    board: esp32dev
+    framework:
+      type: esp-idf
+  
+# Enable logging
+logger:
+    level: DEBUG
+
+light:
+  - platform: status_led
+    name: "${friendly_name} Led"
+    pin: 
+        number: GPIO12
+
+switch:
+  - platform: gpio
+    id: output11
+    pin: GPIO04
+    name: "${friendly_name} Switch"
+
+spi:
+  miso_pin: GPIO19
+  clk_pin: GPIO18
+
+sensor:
+  - platform: max6675
+    name: "Temperature sensor"
+    cs_pin: GPIO05
+    update_interval: 1s
+    
+    
+
