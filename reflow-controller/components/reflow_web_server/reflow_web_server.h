@@ -2,6 +2,7 @@
 
 #include "esphome/core/component.h"
 #include "esphome/components/sensor/sensor.h"
+#include "esphome/components/switch/switch.h"
 
 #ifdef USE_ESP32
 #include "esp_http_server.h"
@@ -32,6 +33,7 @@ public:
     void set_username(const std::string &username) { username_ = username; }
     void set_password(const std::string &password) { password_ = password; }
     void set_temperature_sensor(sensor::Sensor *sensor) { temperature_sensor_ = sensor; }
+    void set_reflow_switch(switch_::Switch *reflow_switch) { reflow_switch_ = reflow_switch; }
     void set_update_interval(uint32_t update_interval) { update_interval_ = update_interval; }
     
 protected:
@@ -39,6 +41,7 @@ protected:
     static esp_err_t temperature_data_handler(httpd_req_t *req);
     static esp_err_t style_handler(httpd_req_t *req);
     static esp_err_t script_handler(httpd_req_t *req);
+    static esp_err_t switch_control_handler(httpd_req_t *req);
     
     std::string get_temperature_data_json();
     bool authenticate_request(httpd_req_t *req);
@@ -54,6 +57,7 @@ protected:
     std::string password_;
     
     sensor::Sensor *temperature_sensor_{nullptr};
+    switch_::Switch *reflow_switch_{nullptr};
     uint32_t update_interval_{1000};
     uint32_t last_update_{0};
     

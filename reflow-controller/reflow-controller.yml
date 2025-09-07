@@ -46,7 +46,7 @@ light:
 
 switch:
   - platform: gpio
-    id: output11
+    id: reflow_switch
     pin: GPIO04
     name: "${friendly_name} Switch"
 
@@ -67,5 +67,6 @@ reflow_web_server:
     username: !secret web_server_username
     password: !secret web_server_password
   temperature_sensor: temperature_sensor
+  reflow_switch: reflow_switch
   update_interval: 1s
 

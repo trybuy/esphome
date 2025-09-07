@@ -63,6 +63,14 @@ void ReflowWebServer::setup() {
         };
         httpd_register_uri_handler(this->server_, &script_uri);
         
+        httpd_uri_t switch_control_uri = {
+            .uri = "/switch_control",
+            .method = HTTP_POST,
+            .handler = switch_control_handler,
+            .user_ctx = this
+        };
+        httpd_register_uri_handler(this->server_, &switch_control_uri);
+        
         ESP_LOGCONFIG(TAG, "Web Server started on port %u", this->port_);
     } else {
         ESP_LOGE(TAG, "Failed to start HTTP server");
@@ -86,6 +94,9 @@ void ReflowWebServer::dump_config() {
     ESP_LOGCONFIG(TAG, "  Authentication: %s", this->username_.empty() ? "NO" : "YES");
     if (this->temperature_sensor_ != nullptr) {
         ESP_LOGCONFIG(TAG, "  Temperature Sensor: %s", this->temperature_sensor_->get_name().c_str());
+    }
+    if (this->reflow_switch_ != nullptr) {
+        ESP_LOGCONFIG(TAG, "  Reflow Switch: %s", this->reflow_switch_->get_name().c_str());
     }
 }
 
@@ -136,6 +147,46 @@ esp_err_t ReflowWebServer::script_handler(httpd_req_t *req) {
     ReflowWebServer* server = static_cast<ReflowWebServer*>(req->user_ctx);
     httpd_resp_set_type(req, "application/javascript");
     httpd_resp_send(req, server->get_script_js(), HTTPD_RESP_USE_STRLEN);
+    return ESP_OK;
+}
+
+esp_err_t ReflowWebServer::switch_control_handler(httpd_req_t *req) {
+    ReflowWebServer* server = static_cast<ReflowWebServer*>(req->user_ctx);
+    
+    if (!server->authenticate_request(req)) {
+        httpd_resp_set_status(req, "401 Unauthorized");
+        httpd_resp_send(req, "Unauthorized", HTTPD_RESP_USE_STRLEN);
+        return ESP_OK;
+    }
+    
+    char buf[100];
+    int ret = httpd_req_recv(req, buf, sizeof(buf) - 1);
+    if (ret <= 0) {
+        httpd_resp_set_status(req, "400 Bad Request");
+        httpd_resp_send(req, "Bad Request", HTTPD_RESP_USE_STRLEN);
+        return ESP_OK;
+    }
+    buf[ret] = '\0';
+    
+    // Parse JSON: {"state": true/false}
+    bool new_state = strstr(buf, "true") != nullptr;
+    
+    if (server->reflow_switch_ != nullptr) {
+        if (new_state) {
+            server->reflow_switch_->turn_on();
+        } else {
+            server->reflow_switch_->turn_off();
+        }
+    }
+    
+    // Return current state
+    std::string response = "{\"state\": ";
+    response += (server->reflow_switch_ && server->reflow_switch_->state) ? "true" : "false";
+    response += "}";
+    
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    httpd_resp_send(req, response.c_str(), response.length());
     return ESP_OK;
 }
 #endif
@@ -204,7 +255,7 @@ void ReflowWebServer::on_temperature_update(float state) {
 }
 
 const char* ReflowWebServer::get_index_html() {
-    return R"(<!DOCTYPE html>
+    return R"html(<!DOCTYPE html>
 <html>
 <head>
     <title>Reflow Controller</title>
@@ -222,17 +273,13 @@ const char* ReflowWebServer::get_index_html() {
         
         <div class="dashboard">
             <div class="status-grid" id="statusGrid">
+                <div class="status-card switch">
+                    <button class="switch-button" id="reflowSwitchBtn" onclick="toggleReflowSwitch()">
+                        <span id="switchState">OFF</span>
+                    </button>
+                </div>
                 <div class="status-card temperature">
-                    <div class="status-label">Current Temperature</div>
-                    <div class="status-value" id="currentTemp">-- °C</div>
-                </div>
-                <div class="status-card system">
-                    <div class="status-label">System Status</div>
-                    <div class="status-value" id="systemStatus">Online</div>
-                </div>
-                <div class="status-card system">
-                    <div class="status-label">Data Points</div>
-                    <div class="status-value" id="dataPoints">0</div>
+                    <div class="status-value" id="currentTemp">-- &deg;C</div>
                 </div>
             </div>
             
@@ -244,7 +291,7 @@ const char* ReflowWebServer::get_index_html() {
     </div>
     <script src="/script.js"></script>
 </body>
-</html>)";
+</html>)html";
 }
 
 const char* ReflowWebServer::get_style_css() {
@@ -316,8 +363,8 @@ body {
     border-left-color: #e74c3c;
 }
 
-.status-card.system {
-    border-left-color: #2ecc71;
+.status-card.switch {
+    border-left-color: #3498db;
 }
 
 .status-label {
@@ -353,6 +400,35 @@ body {
 #temperatureChart {
     height: 400px;
     width: 100%;
+}
+
+.switch-button {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 1.1em;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+}
+
+.switch-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+}
+
+.switch-button.on {
+    background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+    box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
+}
+
+.switch-button.on:hover {
+    box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4);
 }
 
 @media (max-width: 768px) {
@@ -413,7 +489,7 @@ class ReflowDashboard {
                 title: { text: 'Time' }
             },
             yAxis: {
-                title: { text: 'Temperature (°C)' },
+                title: { text: 'Temperature (&deg;C)' },
                 plotLines: [{
                     value: 0,
                     width: 1,
@@ -425,7 +501,7 @@ class ReflowDashboard {
                     return '<b>Temperature</b><br/>' +
                            Highcharts.dateFormat('%H:%M:%S', this.x) + '<br/>' +
                            '<span style="color: #e74c3c; font-weight: bold;">' +
-                           this.y.toFixed(1) + ' °C</span>';
+                           this.y.toFixed(1) + ' &deg;C</span>';
                 }
             },
             legend: { enabled: false },
@@ -453,15 +529,12 @@ class ReflowDashboard {
                     
                     const latest = data[data.length - 1];
                     if (latest) {
-                        document.getElementById('currentTemp').textContent = latest[1].toFixed(1) + ' °C';
+                        document.getElementById('currentTemp').innerHTML = latest[1].toFixed(1) + ' &deg;C';
                     }
-                    
-                    document.getElementById('dataPoints').textContent = data.length;
                 }
             })
             .catch(error => {
                 console.error('Error fetching temperature data:', error);
-                document.getElementById('systemStatus').textContent = 'Error';
             });
     }
     
@@ -472,7 +545,36 @@ class ReflowDashboard {
 }
 
 // Initialize dashboard
-new ReflowDashboard();)";
+new ReflowDashboard();
+
+// Switch control function
+function toggleReflowSwitch() {
+    const btn = document.getElementById('reflowSwitchBtn');
+    const stateSpan = document.getElementById('switchState');
+    const currentState = btn.classList.contains('on');
+    const newState = !currentState;
+    
+    fetch('/switch_control', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ state: newState })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.state) {
+            btn.classList.add('on');
+            stateSpan.textContent = 'ON';
+        } else {
+            btn.classList.remove('on');
+            stateSpan.textContent = 'OFF';
+        }
+    })
+    .catch(error => {
+        console.error('Error controlling switch:', error);
+    });
+})";
 }
 
 
