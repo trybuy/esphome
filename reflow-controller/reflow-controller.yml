@@ -18,7 +18,7 @@ substitutions:
   
 packages:
     common: !include 
-        file: ../common2.yaml
+        file: ../common_no_web.yaml
         vars: 
             friendly_name: ${friendly_name}
   
@@ -34,6 +34,9 @@ esp32:
 # Enable logging
 logger:
     level: DEBUG
+
+external_components:
+  - source: components
 
 light:
   - platform: status_led
@@ -53,9 +56,16 @@ spi:
 
 sensor:
   - platform: max6675
+    id: temperature_sensor
     name: "Temperature sensor"
     cs_pin: GPIO05
     update_interval: 1s
-    
-    
+
+reflow_web_server:
+  port: 80
+  auth:
+    username: !secret web_server_username
+    password: !secret web_server_password
+  temperature_sensor: temperature_sensor
+  update_interval: 1s
 
