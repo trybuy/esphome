@@ -6,7 +6,7 @@ alwaysApply: true
 
 ## Python Environment
 - Always activate the ESPHome Python virtual environment before running first commands in terminal
-- Use: `c:/Users/sergei/Documents/esphome/.venv/Scripts/Activate.ps1`
+- Use: `.venv/Scripts/Activate.ps1`
 - This ensures the correct ESPHome version and dependencies are available
 
 ## ESPHome Compilation
