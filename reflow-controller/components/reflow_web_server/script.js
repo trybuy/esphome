@@ -49,11 +49,15 @@ class ReflowDashboard {
                 }]
             },
             tooltip: {
+                shared: true,
+                crosshairs: true,
                 formatter: function() {
-                    return '<b>Temperature</b><br/>' +
-                           Highcharts.dateFormat('%H:%M:%S', this.x) + '<br/>' +
-                           '<span style="color: #e74c3c; font-weight: bold;">' +
-                           this.y.toFixed(1) + ' &deg;C</span>';
+                    let s = '<b>Temperature</b><br/>' + Highcharts.dateFormat('%H:%M:%S', this.x);
+                    this.points.forEach((point, index) => {
+                        s += '<br/><span style="color: ' + point.series.color + 
+                            '; font-weight: bold;">' + point.y.toFixed(1) + ' &deg;C</span>';
+                    });
+                    return s;
                 }
             },
             legend: { 
@@ -101,12 +105,6 @@ class ReflowDashboard {
                     }
                 }
                 
-                // Update reflow profile curve
-                if (data.reflow_profile_data && data.reflow_profile_data.length > 0) {
-                    this.temperatureChart.series[1].setData(data.reflow_profile_data, true);
-                } else {
-                    this.temperatureChart.series[1].setData([], true);
-                }
                 
                 // Update switch status
                 const btn = document.getElementById('reflowSwitchBtn');
@@ -127,6 +125,23 @@ class ReflowDashboard {
             });
     }
     
+    updateProfileData() {
+        fetch('/profile_data')
+            .then(response => response.json())
+            .then(data => {
+                // Update reflow profile curve
+                if (data && data.length > 0) {
+                    this.temperatureChart.series[1].setData(data, true);
+                } else {
+                    this.temperatureChart.series[1].setData([], true);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching profile data:', error);
+                this.temperatureChart.series[1].setData([], true);
+            });
+    }
+    
     startDataUpdates() {
         this.updateData();
         
@@ -135,8 +150,8 @@ class ReflowDashboard {
     }
 }
 
-// Initialize dashboard
-new ReflowDashboard();
+// Initialize dashboard and make it globally accessible
+window.reflowDashboard = new ReflowDashboard();
 
 // Switch control function
 function toggleReflowSwitch() {
@@ -157,9 +172,13 @@ function toggleReflowSwitch() {
         if (data.state) {
             btn.classList.add('on');
             stateSpan.textContent = 'ON';
+            // Fetch and display reflow profile data when turning on
+            window.reflowDashboard.updateProfileData();
         } else {
             btn.classList.remove('on');
             stateSpan.textContent = 'OFF';
+            // Clear reflow profile data when turning off
+            window.reflowDashboard.temperatureChart.series[1].setData([], true);
         }
     })
     .catch(error => {

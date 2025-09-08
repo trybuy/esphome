@@ -48,6 +48,14 @@ void ReflowWebServer::setup() {
         };
         httpd_register_uri_handler(this->server_, &data_uri);
         
+        httpd_uri_t profile_data_uri = {
+            .uri = "/profile_data",
+            .method = HTTP_GET,
+            .handler = profile_data_handler,
+            .user_ctx = this
+        };
+        httpd_register_uri_handler(this->server_, &profile_data_uri);
+        
         httpd_uri_t style_uri = {
             .uri = "/style.css",
             .method = HTTP_GET,
@@ -132,13 +140,34 @@ esp_err_t ReflowWebServer::data_handler(httpd_req_t *req) {
         return ESP_OK;
     }
     
-    // Combine temperature data, switch status, and reflow profile into single JSON response
+    // Combine temperature data and switch status into single JSON response
     std::string temperature_data = server->get_temperature_data_json();
     
     // Get reflow curve state
     bool switch_state = false;
     if (server->reflow_curve_ != nullptr) {
         switch_state = server->reflow_curve_->is_on();
+    }
+    
+    std::string json = "{";
+    json += "\"temperature_data\":" + temperature_data + ",";
+    json += "\"switch_state\":";
+    json += switch_state ? "true" : "false";
+    json += "}";
+    
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    httpd_resp_send(req, json.c_str(), json.length());
+    return ESP_OK;
+}
+
+esp_err_t ReflowWebServer::profile_data_handler(httpd_req_t *req) {
+    ReflowWebServer* server = static_cast<ReflowWebServer*>(req->user_ctx);
+    
+    if (!server->authenticate_request(req)) {
+        httpd_resp_set_status(req, "401 Unauthorized");
+        httpd_resp_send(req, "Unauthorized", HTTPD_RESP_USE_STRLEN);
+        return ESP_OK;
     }
     
     // Get reflow profile data if active
@@ -157,16 +186,9 @@ esp_err_t ReflowWebServer::data_handler(httpd_req_t *req) {
         reflow_profile_data = profile_json.str();
     }
     
-    std::string json = "{";
-    json += "\"temperature_data\":" + temperature_data + ",";
-    json += "\"reflow_profile_data\":" + reflow_profile_data + ",";
-    json += "\"switch_state\":";
-    json += switch_state ? "true" : "false";
-    json += "}";
-    
     httpd_resp_set_type(req, "application/json");
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
-    httpd_resp_send(req, json.c_str(), json.length());
+    httpd_resp_send(req, reflow_profile_data.c_str(), reflow_profile_data.length());
     return ESP_OK;
 }
 

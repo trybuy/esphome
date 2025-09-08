@@ -41,6 +41,7 @@ public:
 protected:
     static esp_err_t index_handler(httpd_req_t *req);
     static esp_err_t data_handler(httpd_req_t *req);
+    static esp_err_t profile_data_handler(httpd_req_t *req);
     static esp_err_t style_handler(httpd_req_t *req);
     static esp_err_t script_handler(httpd_req_t *req);
     static esp_err_t switch_control_handler(httpd_req_t *req);

@@ -32,9 +32,9 @@ void ReflowCurve::turn_on() {
         this->is_active_ = true;
         
         // Turn on physical switch
-        if (this->reflow_switch_ != nullptr) {
+        /*if (this->reflow_switch_ != nullptr) {
             this->reflow_switch_->turn_on();
-        }
+        }*/
         
         // Get current time for start timestamp using ESPHome time component
         if (this->time_component_ != nullptr) {
@@ -84,7 +84,7 @@ std::vector<std::pair<std::string, float>> ReflowCurve::get_profile_data_with_ti
         point_time.timestamp += point.time_seconds;
         
         // Convert to ISO timestamp string
-        std::string timestamp = point_time.strftime("%Y-%m-%dT%H:%M:%S");
+        std::string timestamp = ESPTime::from_epoch_local(point_time.timestamp).strftime("%Y-%m-%dT%H:%M:%S");
         
         result.push_back({timestamp, point.temperature_celsius});
     }

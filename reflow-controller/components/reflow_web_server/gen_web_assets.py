@@ -81,7 +81,7 @@ def main():
     header_content = generate_web_assets_header(component_source_dir, build_dir)
     
     # Write to the build directory where C++ compilation will find it
-    build_component_dir = os.path.join(build_dir, "src", "esphome", "components", "reflow_web_server")
+    build_component_dir = os.path.join(build_dir, "src")
     os.makedirs(build_component_dir, exist_ok=True)
     header_file_path = os.path.join(build_component_dir, "web_assets.h")
     
