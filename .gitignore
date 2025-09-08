@@ -5,4 +5,4 @@
 ./vscode/*
 /*/.esphome/
 /secrets.yaml
-esphome.code-workspace
+.DS_Store
