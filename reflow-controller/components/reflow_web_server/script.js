@@ -119,6 +119,18 @@ class ReflowDashboard {
                         stateSpan.textContent = 'OFF';
                     }
                 }
+                
+                // Update profile data based on switch state and current series[1] state
+                const currentProfileData = this.temperatureChart.series[1].data;
+                const isProfileEmpty = !currentProfileData || currentProfileData.length === 0;
+                
+                if (data.switch_state && isProfileEmpty) {
+                    // Switch is on and profile data is empty - fetch profile data
+                    this.updateProfileData();
+                } else if (!data.switch_state && !isProfileEmpty) {
+                    // Switch is off and profile data is not empty - clear profile data
+                    this.temperatureChart.series[1].setData([], true);
+                }
             })
             .catch(error => {
                 console.error('Error fetching data:', error);
@@ -172,14 +184,11 @@ function toggleReflowSwitch() {
         if (data.state) {
             btn.classList.add('on');
             stateSpan.textContent = 'ON';
-            // Fetch and display reflow profile data when turning on
-            window.reflowDashboard.updateProfileData();
         } else {
             btn.classList.remove('on');
             stateSpan.textContent = 'OFF';
-            // Clear reflow profile data when turning off
-            window.reflowDashboard.temperatureChart.series[1].setData([], true);
         }
+        // Profile data will be updated automatically in the next data update cycle
     })
     .catch(error => {
         console.error('Error controlling switch:', error);
