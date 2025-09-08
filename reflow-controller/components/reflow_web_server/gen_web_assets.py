@@ -6,22 +6,23 @@ This script runs before C++ compilation to generate web_assets.h from source fil
 
 import os
 import sys
+import gzip
 
-def read_web_asset(filename, component_dir):
-    """Read a web asset file and return its contents as a C++ string literal."""
+def read_web_asset_gzipped(filename, component_dir):
+    """Read a web asset file and return its contents as a gzipped C++ byte array."""
     file_path = os.path.join(component_dir, filename)
     
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
         
-        # Escape special characters for C++ string literal
-        content = content.replace('\\', '\\\\')  # Escape backslashes
-        content = content.replace('"', '\\"')    # Escape quotes
-        content = content.replace('\n', '\\n')   # Convert newlines
-        content = content.replace('\r', '')      # Remove carriage returns
+        # Compress the content using gzip
+        compressed_content = gzip.compress(content.encode('utf-8'))
         
-        return content
+        # Convert to C++ byte array format
+        byte_array = ', '.join(f'0x{byte:02x}' for byte in compressed_content)
+        
+        return byte_array, len(compressed_content)
     except FileNotFoundError:
         print(f"Error: Web asset file not found: {file_path}")
         sys.exit(1)
@@ -34,9 +35,9 @@ def generate_web_assets_header(component_dir, build_dir):
     print(f"Generating web assets from: {component_dir}")
     print(f"Writing to build directory: {build_dir}")
     
-    html_content = read_web_asset("index.html", component_dir)
-    css_content = read_web_asset("style.css", component_dir)
-    js_content = read_web_asset("script.js", component_dir)
+    html_content, html_size = read_web_asset_gzipped("index.html", component_dir)
+    css_content, css_size = read_web_asset_gzipped("style.css", component_dir)
+    js_content, js_size = read_web_asset_gzipped("script.js", component_dir)
     
     header_content = f'''#pragma once
 
@@ -47,11 +48,14 @@ def generate_web_assets_header(component_dir, build_dir):
 namespace esphome {{
 namespace reflow_web_server {{
 
-const char* const INDEX_HTML = "{html_content}";
+const uint8_t INDEX_HTML_GZIP[] = {{{html_content}}};
+const size_t INDEX_HTML_GZIP_SIZE = {html_size};
 
-const char* const STYLE_CSS = "{css_content}";
+const uint8_t STYLE_CSS_GZIP[] = {{{css_content}}};
+const size_t STYLE_CSS_GZIP_SIZE = {css_size};
 
-const char* const SCRIPT_JS = "{js_content}";
+const uint8_t SCRIPT_JS_GZIP[] = {{{js_content}}};
+const size_t SCRIPT_JS_GZIP_SIZE = {js_size};
 
 }}  // namespace reflow_web_server
 }}  // namespace esphome

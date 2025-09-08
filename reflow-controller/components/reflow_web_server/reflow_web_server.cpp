@@ -127,7 +127,8 @@ esp_err_t ReflowWebServer::index_handler(httpd_req_t *req) {
     }
     
     httpd_resp_set_type(req, "text/html");
-    httpd_resp_send(req, INDEX_HTML, HTTPD_RESP_USE_STRLEN);
+    httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
+    httpd_resp_send(req, reinterpret_cast<const char*>(INDEX_HTML_GZIP), INDEX_HTML_GZIP_SIZE);
     return ESP_OK;
 }
 
@@ -195,14 +196,16 @@ esp_err_t ReflowWebServer::profile_data_handler(httpd_req_t *req) {
 esp_err_t ReflowWebServer::style_handler(httpd_req_t *req) {
     ReflowWebServer* server = static_cast<ReflowWebServer*>(req->user_ctx);
     httpd_resp_set_type(req, "text/css");
-    httpd_resp_send(req, STYLE_CSS, HTTPD_RESP_USE_STRLEN);
+    httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
+    httpd_resp_send(req, reinterpret_cast<const char*>(STYLE_CSS_GZIP), STYLE_CSS_GZIP_SIZE);
     return ESP_OK;
 }
 
 esp_err_t ReflowWebServer::script_handler(httpd_req_t *req) {
     ReflowWebServer* server = static_cast<ReflowWebServer*>(req->user_ctx);
     httpd_resp_set_type(req, "application/javascript");
-    httpd_resp_send(req, SCRIPT_JS, HTTPD_RESP_USE_STRLEN);
+    httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
+    httpd_resp_send(req, reinterpret_cast<const char*>(SCRIPT_JS_GZIP), SCRIPT_JS_GZIP_SIZE);
     return ESP_OK;
 }
 
