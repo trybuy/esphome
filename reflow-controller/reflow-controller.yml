@@ -43,6 +43,7 @@ light:
     name: "${friendly_name} Led"
     pin: 
         number: GPIO12
+        ignore_strapping_warning: true
 
 switch:
   - platform: gpio
@@ -58,7 +59,9 @@ sensor:
   - platform: max6675
     id: temperature_sensor
     name: "Temperature sensor"
-    cs_pin: GPIO05
+    cs_pin: 
+      number: GPIO05
+      ignore_strapping_warning: true
     update_interval: 1s
 
 reflow_curve:
