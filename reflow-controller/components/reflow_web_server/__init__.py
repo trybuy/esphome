@@ -8,7 +8,6 @@ from esphome.const import (
     CONF_PASSWORD,
 )
 from esphome.components import sensor
-from esphome.components import switch
 from esphome.core import CORE
 import os
 
@@ -18,7 +17,7 @@ reflow_web_server_ns = cg.esphome_ns.namespace("reflow_web_server")
 ReflowWebServer = reflow_web_server_ns.class_("ReflowWebServer", cg.Component)
 
 CONF_TEMPERATURE_SENSOR = "temperature_sensor"
-CONF_REFLOW_SWITCH = "reflow_switch"
+CONF_REFLOW_CURVE = "reflow_curve"
 CONF_UPDATE_INTERVAL = "update_interval"
 
 CONFIG_SCHEMA = cv.Schema(
@@ -32,7 +31,7 @@ CONFIG_SCHEMA = cv.Schema(
             }
         ),
         cv.Optional(CONF_TEMPERATURE_SENSOR): cv.use_id(sensor.Sensor),
-        cv.Optional(CONF_REFLOW_SWITCH): cv.use_id(switch.Switch),
+        cv.Optional(CONF_REFLOW_CURVE): cv.use_id(cg.Component),
         cv.Optional(CONF_UPDATE_INTERVAL, default="1s"): cv.positive_time_period_milliseconds,
     }
 ).extend(cv.COMPONENT_SCHEMA)
@@ -54,9 +53,9 @@ async def to_code(config):
         temp_sensor = await cg.get_variable(config[CONF_TEMPERATURE_SENSOR])
         cg.add(var.set_temperature_sensor(temp_sensor))
     
-    if CONF_REFLOW_SWITCH in config:
-        reflow_switch = await cg.get_variable(config[CONF_REFLOW_SWITCH])
-        cg.add(var.set_reflow_switch(reflow_switch))
+    if CONF_REFLOW_CURVE in config:
+        reflow_curve = await cg.get_variable(config[CONF_REFLOW_CURVE])
+        cg.add(var.set_reflow_curve(reflow_curve))
     
     cg.add(var.set_update_interval(config[CONF_UPDATE_INTERVAL]))
     

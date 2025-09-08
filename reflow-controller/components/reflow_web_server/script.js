@@ -56,7 +56,14 @@ class ReflowDashboard {
                            this.y.toFixed(1) + ' &deg;C</span>';
                 }
             },
-            legend: { enabled: false },
+            legend: { 
+                enabled: true,
+                align: 'right',
+                verticalAlign: 'top',
+                layout: 'vertical',
+                x: -10,
+                y: 10
+            },
             plotOptions: {
                 spline: {
                     marker: { enabled: false },
@@ -66,7 +73,15 @@ class ReflowDashboard {
             },
             series: [{
                 name: 'Temperature',
-                data: []
+                data: [],
+                color: '#e74c3c'
+            }, {
+                name: 'Reflow Profile',
+                data: [],
+                color: '#3498db',
+                dashStyle: 'dash',
+                lineWidth: 2,
+                marker: { enabled: true, radius: 3 }
             }],
             credits: { enabled: false }
         });
@@ -84,6 +99,13 @@ class ReflowDashboard {
                     if (latest) {
                         document.getElementById('currentTemp').innerHTML = latest[1].toFixed(1) + ' &deg;C';
                     }
+                }
+                
+                // Update reflow profile curve
+                if (data.reflow_profile_data && data.reflow_profile_data.length > 0) {
+                    this.temperatureChart.series[1].setData(data.reflow_profile_data, true);
+                } else {
+                    this.temperatureChart.series[1].setData([], true);
                 }
                 
                 // Update switch status

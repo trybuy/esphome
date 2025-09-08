@@ -85,11 +85,6 @@ void ReflowWebServer::setup() {
         });
     }
     
-    if (this->reflow_switch_ != nullptr) {
-        this->reflow_switch_->add_on_state_callback([this](bool state) {
-            ESP_LOGD(TAG, "Switch state changed to: %s", state ? "ON" : "OFF");
-        });
-    }
 }
 
 void ReflowWebServer::loop() {
@@ -103,8 +98,8 @@ void ReflowWebServer::dump_config() {
     if (this->temperature_sensor_ != nullptr) {
         ESP_LOGCONFIG(TAG, "  Temperature Sensor: %s", this->temperature_sensor_->get_name().c_str());
     }
-    if (this->reflow_switch_ != nullptr) {
-        ESP_LOGCONFIG(TAG, "  Reflow Switch: %s", this->reflow_switch_->get_name().c_str());
+    if (this->reflow_curve_ != nullptr) {
+        ESP_LOGCONFIG(TAG, "  Reflow Curve: Connected");
     }
 }
 
@@ -137,12 +132,34 @@ esp_err_t ReflowWebServer::data_handler(httpd_req_t *req) {
         return ESP_OK;
     }
     
-    // Combine temperature data and switch status into single JSON response
+    // Combine temperature data, switch status, and reflow profile into single JSON response
     std::string temperature_data = server->get_temperature_data_json();
-    bool switch_state = (server->reflow_switch_ && server->reflow_switch_->state);
+    
+    // Get reflow curve state
+    bool switch_state = false;
+    if (server->reflow_curve_ != nullptr) {
+        switch_state = server->reflow_curve_->is_on();
+    }
+    
+    // Get reflow profile data if active
+    std::string reflow_profile_data = "[]";
+    if (server->reflow_curve_ != nullptr && server->reflow_curve_->is_on()) {
+        auto profile_points = server->reflow_curve_->get_profile_data_with_timestamps();
+        std::ostringstream profile_json;
+        profile_json << "[";
+        bool first = true;
+        for (const auto &point : profile_points) {
+            if (!first) profile_json << ",";
+            first = false;
+            profile_json << "[\"" << point.first << "\"," << point.second << "]";
+        }
+        profile_json << "]";
+        reflow_profile_data = profile_json.str();
+    }
     
     std::string json = "{";
     json += "\"temperature_data\":" + temperature_data + ",";
+    json += "\"reflow_profile_data\":" + reflow_profile_data + ",";
     json += "\"switch_state\":";
     json += switch_state ? "true" : "false";
     json += "}";
@@ -188,17 +205,23 @@ esp_err_t ReflowWebServer::switch_control_handler(httpd_req_t *req) {
     // Parse JSON: {"state": true/false}
     bool new_state = strstr(buf, "true") != nullptr;
     
-    if (server->reflow_switch_ != nullptr) {
+    // Control reflow curve
+    if (server->reflow_curve_ != nullptr) {
         if (new_state) {
-            server->reflow_switch_->turn_on();
+            server->reflow_curve_->turn_on();
         } else {
-            server->reflow_switch_->turn_off();
+            server->reflow_curve_->turn_off();
         }
     }
     
-    // Return current state
+    // Return current state based on reflow curve
+    bool current_state = false;
+    if (server->reflow_curve_ != nullptr) {
+        current_state = server->reflow_curve_->is_on();
+    }
+    
     std::string response = "{\"state\": ";
-    response += (server->reflow_switch_ && server->reflow_switch_->state) ? "true" : "false";
+    response += current_state ? "true" : "false";
     response += "}";
     
     httpd_resp_set_type(req, "application/json");

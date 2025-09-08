@@ -2,8 +2,8 @@
 
 #include "esphome/core/component.h"
 #include "esphome/components/sensor/sensor.h"
-#include "esphome/components/switch/switch.h"
 #include "esphome/components/time/real_time_clock.h"
+#include "../reflow_curve/reflow_curve.h"
 
 #ifdef USE_ESP32
 #include "esp_http_server.h"
@@ -34,7 +34,7 @@ public:
     void set_username(const std::string &username) { username_ = username; }
     void set_password(const std::string &password) { password_ = password; }
     void set_temperature_sensor(sensor::Sensor *sensor) { temperature_sensor_ = sensor; }
-    void set_reflow_switch(switch_::Switch *reflow_switch) { reflow_switch_ = reflow_switch; }
+    void set_reflow_curve(reflow_curve::ReflowCurve *reflow_curve) { reflow_curve_ = reflow_curve; }
     void set_update_interval(uint32_t update_interval) { update_interval_ = update_interval; }
     void set_time_component(time::RealTimeClock *time_component) { time_component_ = time_component; }
     
@@ -56,7 +56,7 @@ protected:
     std::string password_;
     
     sensor::Sensor *temperature_sensor_{nullptr};
-    switch_::Switch *reflow_switch_{nullptr};
+    reflow_curve::ReflowCurve *reflow_curve_{nullptr};
     time::RealTimeClock *time_component_{nullptr};
     uint32_t update_interval_{1000};
     uint32_t last_update_{0};

@@ -61,12 +61,16 @@ sensor:
     cs_pin: GPIO05
     update_interval: 1s
 
+reflow_curve:
+  id: reflow_curve_component
+  reflow_switch: reflow_switch
+
 reflow_web_server:
   port: 80
   auth:
     username: !secret web_server_username
     password: !secret web_server_password
   temperature_sensor: temperature_sensor
-  reflow_switch: reflow_switch
+  reflow_curve: reflow_curve_component
   update_interval: 1s
 
