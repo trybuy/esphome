@@ -30,7 +30,6 @@ CONFIG_SCHEMA = cv.Schema(
                 cv.Required(CONF_PASSWORD): cv.string_strict,
             }
         ),
-        cv.Optional(CONF_TEMPERATURE_SENSOR): cv.use_id(sensor.Sensor),
         cv.Optional(CONF_REFLOW_CURVE): cv.use_id(cg.Component),
         cv.Optional(CONF_UPDATE_INTERVAL, default="1s"): cv.positive_time_period_milliseconds,
     }
@@ -49,9 +48,6 @@ async def to_code(config):
         cg.add(var.set_username(config[CONF_AUTH][CONF_USERNAME]))
         cg.add(var.set_password(config[CONF_AUTH][CONF_PASSWORD]))
     
-    if CONF_TEMPERATURE_SENSOR in config:
-        temp_sensor = await cg.get_variable(config[CONF_TEMPERATURE_SENSOR])
-        cg.add(var.set_temperature_sensor(temp_sensor))
     
     if CONF_REFLOW_CURVE in config:
         reflow_curve = await cg.get_variable(config[CONF_REFLOW_CURVE])
@@ -59,13 +55,6 @@ async def to_code(config):
     
     cg.add(var.set_update_interval(config[CONF_UPDATE_INTERVAL]))
     
-    # Try to find and set the time component automatically
-    for comp in CORE.config.get("time", []):
-        time_comp_id = comp.get(CONF_ID)
-        if time_comp_id:
-            time_comp = await cg.get_variable(time_comp_id)
-            cg.add(var.set_time_component(time_comp))
-            break  # Use the first time component found
 
     # Register the PlatformIO pre-script to generate web assets before compilation
     component_dir = os.path.dirname(os.path.abspath(__file__))

@@ -2,16 +2,23 @@
 
 #include "esphome/core/component.h"
 #include "esphome/components/switch/switch.h"
+#include "esphome/components/sensor/sensor.h"
 #include "esphome/components/time/real_time_clock.h"
 #include "esphome/core/time.h"
 #include <vector>
 #include <string>
+#include <deque>
 
 namespace esphome {
 namespace reflow_curve {
 
 // Forward declaration - struct defined in generated header
 struct ReflowProfilePoint;
+
+struct TemperatureDataPoint {
+    std::string iso_timestamp;
+    float temperature;
+};
 
 class ReflowCurve : public Component {
 public:
@@ -30,11 +37,17 @@ public:
     // Set the physical switch to control
     void set_reflow_switch(switch_::Switch *reflow_switch) { reflow_switch_ = reflow_switch; }
     
+    // Set the temperature sensor
+    void set_temperature_sensor(sensor::Sensor *sensor) { temperature_sensor_ = sensor; }
+    
     // Set the time component
     void set_time_component(time::RealTimeClock *time_component) { time_component_ = time_component; }
     
     // Get profile data
     std::vector<std::pair<std::string, float>> get_profile_data_with_timestamps() const;
+    
+    // Get temperature data
+    std::string get_temperature_data_json() const;
     
     // Callbacks for state changes
     void add_on_state_callback(std::function<void(bool)> &&callback);
@@ -43,10 +56,15 @@ protected:
     bool is_active_{false};
     ESPTime start_timestamp_;
     switch_::Switch *reflow_switch_{nullptr};
+    sensor::Sensor *temperature_sensor_{nullptr};
     time::RealTimeClock *time_component_{nullptr};
     std::vector<std::function<void(bool)>> state_callbacks_;
     
+    std::deque<TemperatureDataPoint> temperature_data_;
+    static const size_t MAX_DATA_POINTS = 500;
+    
     void trigger_state_callbacks();
+    void on_temperature_update(float state);
 };
 
 }  // namespace reflow_curve

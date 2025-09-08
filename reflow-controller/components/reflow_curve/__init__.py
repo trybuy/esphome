@@ -3,7 +3,7 @@ import esphome.config_validation as cv
 from esphome.const import (
     CONF_ID,
 )
-from esphome.components import switch
+from esphome.components import switch, sensor
 from esphome.core import CORE
 import os
 
@@ -13,11 +13,13 @@ reflow_curve_ns = cg.esphome_ns.namespace("reflow_curve")
 ReflowCurve = reflow_curve_ns.class_("ReflowCurve", cg.Component)
 
 CONF_REFLOW_SWITCH = "reflow_switch"
+CONF_TEMPERATURE_SENSOR = "temperature_sensor"
 
 CONFIG_SCHEMA = cv.Schema(
     {
         cv.GenerateID(): cv.declare_id(ReflowCurve),
         cv.Optional(CONF_REFLOW_SWITCH): cv.use_id(switch.Switch),
+        cv.Optional(CONF_TEMPERATURE_SENSOR): cv.use_id(sensor.Sensor),
     }
 ).extend(cv.COMPONENT_SCHEMA)
 
@@ -28,6 +30,10 @@ async def to_code(config):
     if CONF_REFLOW_SWITCH in config:
         reflow_switch = await cg.get_variable(config[CONF_REFLOW_SWITCH])
         cg.add(var.set_reflow_switch(reflow_switch))
+    
+    if CONF_TEMPERATURE_SENSOR in config:
+        temp_sensor = await cg.get_variable(config[CONF_TEMPERATURE_SENSOR])
+        cg.add(var.set_temperature_sensor(temp_sensor))
 
     # Try to find and set the time component automatically
     for comp in CORE.config.get("time", []):

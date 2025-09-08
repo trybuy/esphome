@@ -87,11 +87,6 @@ void ReflowWebServer::setup() {
     }
 #endif
     
-    if (this->temperature_sensor_ != nullptr) {
-        this->temperature_sensor_->add_on_state_callback([this](float state) {
-            this->on_temperature_update(state);
-        });
-    }
     
 }
 
@@ -103,9 +98,6 @@ void ReflowWebServer::dump_config() {
     ESP_LOGCONFIG(TAG, "Reflow Web Server:");
     ESP_LOGCONFIG(TAG, "  Port: %u", this->port_);
     ESP_LOGCONFIG(TAG, "  Authentication: %s", this->username_.empty() ? "NO" : "YES");
-    if (this->temperature_sensor_ != nullptr) {
-        ESP_LOGCONFIG(TAG, "  Temperature Sensor: %s", this->temperature_sensor_->get_name().c_str());
-    }
     if (this->reflow_curve_ != nullptr) {
         ESP_LOGCONFIG(TAG, "  Reflow Curve: Connected");
     }
@@ -142,7 +134,10 @@ esp_err_t ReflowWebServer::data_handler(httpd_req_t *req) {
     }
     
     // Combine temperature data and switch status into single JSON response
-    std::string temperature_data = server->get_temperature_data_json();
+    std::string temperature_data = "[]";
+    if (server->reflow_curve_ != nullptr) {
+        temperature_data = server->reflow_curve_->get_temperature_data_json();
+    }
     
     // Get reflow curve state
     bool switch_state = false;
@@ -257,24 +252,6 @@ esp_err_t ReflowWebServer::switch_control_handler(httpd_req_t *req) {
 
 #endif
 
-std::string ReflowWebServer::get_temperature_data_json() {
-    std::ostringstream json;
-    json << "[";
-    bool first = true;
-    
-    for (const auto &point : this->temperature_data_) {
-        if (!first) {
-            json << ",";
-        }
-        first = false;
-        
-        // Return ISO timestamp as string with temperature value
-        json << "[\"" << point.iso_timestamp << "\"," << point.temperature << "]";
-    }
-    
-    json << "]";
-    return json.str();
-}
 
 bool ReflowWebServer::authenticate_request(httpd_req_t *req) {
     if (this->username_.empty()) {
@@ -303,38 +280,6 @@ bool ReflowWebServer::authenticate_request(httpd_req_t *req) {
     return false;
 }
 
-void ReflowWebServer::on_temperature_update(float state) {
-    if (std::isnan(state)) {
-        return;  // Skip NaN values
-    }
-    
-    std::string iso_timestamp;
-    
-    // Try to get actual time using ESPHome time component
-    if (this->time_component_ != nullptr) {
-        auto time_now = this->time_component_->now();
-        if (time_now.is_valid()) {
-            // Convert ESPHome time to ISO string format
-            iso_timestamp = time_now.strftime("%Y-%m-%dT%H:%M:%S");
-        } else {
-            // Fallback to relative time if not synced yet
-            uint32_t millis_time = millis() / 1000;
-            iso_timestamp = "T+" + std::to_string(millis_time) + "s";
-        }
-    } else {
-        // Fallback to relative time if time component is not available
-        uint32_t millis_time = millis() / 1000;
-        iso_timestamp = "T+" + std::to_string(millis_time) + "s";
-    }
-    
-    // Add new data point
-    this->temperature_data_.push_back({iso_timestamp, state});
-    
-    // Remove old data points to keep memory usage reasonable
-    while (this->temperature_data_.size() > MAX_DATA_POINTS) {
-        this->temperature_data_.pop_front();
-    }
-}
 
 
 

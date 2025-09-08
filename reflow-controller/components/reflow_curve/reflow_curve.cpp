@@ -2,7 +2,9 @@
 #include "reflow_profile_data.h"
 #include "esphome/core/log.h"
 #include "esphome/core/application.h"
+#include "esphome/core/helpers.h"
 #include <ctime>
+#include <sstream>
 
 namespace esphome {
 namespace reflow_curve {
@@ -11,6 +13,12 @@ static const char *const TAG = "reflow_curve";
 
 void ReflowCurve::setup() {
     ESP_LOGCONFIG(TAG, "Setting up Reflow Curve...");
+    
+    if (this->temperature_sensor_ != nullptr) {
+        this->temperature_sensor_->add_on_state_callback([this](float state) {
+            this->on_temperature_update(state);
+        });
+    }
 }
 
 void ReflowCurve::loop() {
@@ -21,6 +29,9 @@ void ReflowCurve::dump_config() {
     ESP_LOGCONFIG(TAG, "Reflow Curve:");
     ESP_LOGCONFIG(TAG, "  Profile Points: %d", REFLOW_PROFILE_SIZE);
     ESP_LOGCONFIG(TAG, "  State: %s", this->is_active_ ? "ON" : "OFF");
+    if (this->temperature_sensor_ != nullptr) {
+        ESP_LOGCONFIG(TAG, "  Temperature Sensor: %s", this->temperature_sensor_->get_name().c_str());
+    }
 }
 
 float ReflowCurve::get_setup_priority() const {
@@ -99,6 +110,58 @@ void ReflowCurve::add_on_state_callback(std::function<void(bool)> &&callback) {
 void ReflowCurve::trigger_state_callbacks() {
     for (auto &callback : this->state_callbacks_) {
         callback(this->is_active_);
+    }
+}
+
+std::string ReflowCurve::get_temperature_data_json() const {
+    std::ostringstream json;
+    json << "[";
+    bool first = true;
+    
+    for (const auto &point : this->temperature_data_) {
+        if (!first) {
+            json << ",";
+        }
+        first = false;
+        
+        // Return ISO timestamp as string with temperature value
+        json << "[\"" << point.iso_timestamp << "\"," << point.temperature << "]";
+    }
+    
+    json << "]";
+    return json.str();
+}
+
+void ReflowCurve::on_temperature_update(float state) {
+    if (std::isnan(state)) {
+        return;  // Skip NaN values
+    }
+    
+    std::string iso_timestamp;
+    
+    // Try to get actual time using ESPHome time component
+    if (this->time_component_ != nullptr) {
+        auto time_now = this->time_component_->now();
+        if (time_now.is_valid()) {
+            // Convert ESPHome time to ISO string format
+            iso_timestamp = time_now.strftime("%Y-%m-%dT%H:%M:%S");
+        } else {
+            // Fallback to relative time if not synced yet
+            uint32_t millis_time = millis() / 1000;
+            iso_timestamp = "T+" + std::to_string(millis_time) + "s";
+        }
+    } else {
+        // Fallback to relative time if time component is not available
+        uint32_t millis_time = millis() / 1000;
+        iso_timestamp = "T+" + std::to_string(millis_time) + "s";
+    }
+    
+    // Add new data point
+    this->temperature_data_.push_back({iso_timestamp, state});
+    
+    // Remove old data points to keep memory usage reasonable
+    while (this->temperature_data_.size() > MAX_DATA_POINTS) {
+        this->temperature_data_.pop_front();
     }
 }
 
