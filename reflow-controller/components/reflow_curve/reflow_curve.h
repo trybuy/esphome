@@ -5,6 +5,7 @@
 #include "esphome/components/sensor/sensor.h"
 #include "esphome/components/time/real_time_clock.h"
 #include "esphome/core/time.h"
+#include "pid_controller.h"
 #include <vector>
 #include <string>
 #include <deque>
@@ -15,10 +16,6 @@ namespace reflow_curve {
 // Forward declaration - struct defined in generated header
 struct ReflowProfilePoint;
 
-struct TemperatureDataPoint {
-    std::string iso_timestamp;
-    float temperature;
-};
 
 class ReflowCurve : public Component {
 public:
@@ -49,6 +46,11 @@ public:
     // Get temperature data
     std::string get_temperature_data_json() const;
     
+    // PID Controller configuration
+    void set_pid_config(const PIDConfig &config) { pid_controller_.set_config(config); }
+    PIDConfig& get_pid_config() { return pid_controller_.get_config(); }
+    const PIDState& get_pid_state() const { return pid_controller_.get_state(); }
+    
     // Callbacks for state changes
     void add_on_state_callback(std::function<void(bool)> &&callback);
 
@@ -62,6 +64,10 @@ protected:
     
     std::deque<TemperatureDataPoint> temperature_data_;
     static const size_t MAX_DATA_POINTS = 500;
+    
+    // PID Controller
+    PIDController pid_controller_;
+    uint32_t last_control_time_{0};
     
     void trigger_state_callbacks();
     void on_temperature_update(float state);

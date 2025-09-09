@@ -22,7 +22,34 @@ void ReflowCurve::setup() {
 }
 
 void ReflowCurve::loop() {
-    // Nothing to do in loop for this component
+    // Run PID control if active
+    if (this->is_active_ && this->start_timestamp_.is_valid()) {
+        uint32_t now_millis = millis();
+        double dt_s = (now_millis - this->last_control_time_) / 1000.0;
+        
+        // Run control at reasonable frequency (e.g., every 100ms)
+        if (dt_s >= 0.1) {
+            // Calculate elapsed time since start
+            ESPTime now_time = ESPTime::from_epoch_local(now_millis / 1000);
+            unsigned int elapsed_s = static_cast<unsigned int>(now_time.timestamp - this->start_timestamp_.timestamp);
+            
+            // Run PID control
+            bool heater_should_be_on = this->pid_controller_.control_tick(elapsed_s, dt_s, this->temperature_data_);
+            
+            // Control the switch based on PID output
+            if (this->reflow_switch_ != nullptr) {
+                if (heater_should_be_on) {
+                    if (!this->reflow_switch_->state) {
+                        this->reflow_switch_->turn_on();
+                    }
+                } else if(this->reflow_switch_->state) {
+                    this->reflow_switch_->turn_off();
+                }
+            }
+            
+            this->last_control_time_ = now_millis;
+        }
+    }
 }
 
 void ReflowCurve::dump_config() {
@@ -42,10 +69,9 @@ void ReflowCurve::turn_on() {
     if (!this->is_active_) {
         this->is_active_ = true;
         
-        // Turn on physical switch
-        /*if (this->reflow_switch_ != nullptr) {
-            this->reflow_switch_->turn_on();
-        }*/
+        // Reset PID controller state
+        this->pid_controller_.reset_state();
+        this->last_control_time_ = millis();
         
         // Get current time for start timestamp using ESPHome time component
         if (this->time_component_ != nullptr) {
