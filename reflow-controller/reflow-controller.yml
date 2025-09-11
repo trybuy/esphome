@@ -70,10 +70,8 @@ reflow_curve:
   temperature_sensor: temperature_sensor
 
 reflow_web_server:
-  port: 80
-  auth:
-    username: !secret web_server_username
-    password: !secret web_server_password
   reflow_curve: reflow_curve_component
   update_interval: 1s
+
+captive_portal:
 

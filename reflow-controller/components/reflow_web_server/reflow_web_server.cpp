@@ -5,89 +5,28 @@
 #include "esphome/core/util.h"
 #include "esphome/core/helpers.h"
 
-#ifdef USE_ESP32
-#include "esp_http_server.h"
-#include <cstring>
-#include <sstream>
+#ifdef USE_ARDUINO
+#include <ESPAsyncWebServer.h>
+#elif USE_ESP_IDF
+#include "esphome/components/web_server_idf/web_server_idf.h"
 #endif
+
+#include <sstream>
 
 namespace esphome {
 namespace reflow_web_server {
 
 static const char *const TAG = "reflow_web_server";
 
-// Static instance for C callback access
-ReflowWebServer* ReflowWebServer::instance_ = nullptr;
+ReflowWebServer::ReflowWebServer(web_server_base::WebServerBase *base) : base_(base) {}
 
 void ReflowWebServer::setup() {
     ESP_LOGCONFIG(TAG, "Setting up Reflow Web Server...");
     
-    instance_ = this;
+    this->base_->init();
+    this->base_->add_handler(this);
     
-#ifdef USE_ESP32
-    httpd_config_t config = HTTPD_DEFAULT_CONFIG();
-    config.server_port = this->port_;
-    config.max_uri_handlers = 10;
-    config.stack_size = 8192;
-    
-    if (httpd_start(&this->server_, &config) == ESP_OK) {
-        // Register URI handlers
-        httpd_uri_t index_uri = {
-            .uri = "/",
-            .method = HTTP_GET,
-            .handler = index_handler,
-            .user_ctx = this
-        };
-        httpd_register_uri_handler(this->server_, &index_uri);
-        
-        httpd_uri_t data_uri = {
-            .uri = "/data",
-            .method = HTTP_GET,
-            .handler = data_handler,
-            .user_ctx = this
-        };
-        httpd_register_uri_handler(this->server_, &data_uri);
-        
-        httpd_uri_t profile_data_uri = {
-            .uri = "/profile_data",
-            .method = HTTP_GET,
-            .handler = profile_data_handler,
-            .user_ctx = this
-        };
-        httpd_register_uri_handler(this->server_, &profile_data_uri);
-        
-        httpd_uri_t style_uri = {
-            .uri = "/style.css",
-            .method = HTTP_GET,
-            .handler = style_handler,
-            .user_ctx = this
-        };
-        httpd_register_uri_handler(this->server_, &style_uri);
-        
-        httpd_uri_t script_uri = {
-            .uri = "/script.js",
-            .method = HTTP_GET,
-            .handler = script_handler,
-            .user_ctx = this
-        };
-        httpd_register_uri_handler(this->server_, &script_uri);
-        
-        httpd_uri_t switch_control_uri = {
-            .uri = "/switch_control",
-            .method = HTTP_POST,
-            .handler = switch_control_handler,
-            .user_ctx = this
-        };
-        httpd_register_uri_handler(this->server_, &switch_control_uri);
-        
-        
-        ESP_LOGCONFIG(TAG, "Web Server started on port %u", this->port_);
-    } else {
-        ESP_LOGE(TAG, "Failed to start HTTP server");
-    }
-#endif
-    
-    
+    ESP_LOGCONFIG(TAG, "Reflow Web Server handlers registered");
 }
 
 void ReflowWebServer::loop() {
@@ -96,8 +35,6 @@ void ReflowWebServer::loop() {
 
 void ReflowWebServer::dump_config() {
     ESP_LOGCONFIG(TAG, "Reflow Web Server:");
-    ESP_LOGCONFIG(TAG, "  Port: %u", this->port_);
-    ESP_LOGCONFIG(TAG, "  Authentication: %s", this->username_.empty() ? "NO" : "YES");
     if (this->reflow_curve_ != nullptr) {
         ESP_LOGCONFIG(TAG, "  Reflow Curve: Connected");
     }
@@ -107,42 +44,56 @@ float ReflowWebServer::get_setup_priority() const {
     return setup_priority::WIFI - 1.0f;
 }
 
-#ifdef USE_ESP32
-esp_err_t ReflowWebServer::index_handler(httpd_req_t *req) {
-    ReflowWebServer* server = static_cast<ReflowWebServer*>(req->user_ctx);
-    
-    if (!server->authenticate_request(req)) {
-        httpd_resp_set_status(req, "401 Unauthorized");
-        httpd_resp_set_hdr(req, "WWW-Authenticate", "Basic realm=\"Reflow Controller\"");
-        httpd_resp_send(req, "Unauthorized", HTTPD_RESP_USE_STRLEN);
-        return ESP_OK;
+bool ReflowWebServer::canHandle(AsyncWebServerRequest *request) {
+    if (request->method() == HTTP_GET) {
+        if (request->url() == "/" ||
+            request->url() == "/data" ||
+            request->url() == "/profile_data" ||
+            request->url() == "/style.css" ||
+            request->url() == "/script.js") {
+            return true;
+        }
+    } else if (request->method() == HTTP_POST) {
+        if (request->url() == "/switch_control") {
+            return true;
+        }
     }
-    
-    httpd_resp_set_type(req, "text/html");
-    httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
-    httpd_resp_send(req, reinterpret_cast<const char*>(INDEX_HTML_GZIP), INDEX_HTML_GZIP_SIZE);
-    return ESP_OK;
+    return false;
 }
 
-esp_err_t ReflowWebServer::data_handler(httpd_req_t *req) {
-    ReflowWebServer* server = static_cast<ReflowWebServer*>(req->user_ctx);
-    
-    if (!server->authenticate_request(req)) {
-        httpd_resp_set_status(req, "401 Unauthorized");
-        httpd_resp_send(req, "Unauthorized", HTTPD_RESP_USE_STRLEN);
-        return ESP_OK;
+void ReflowWebServer::handleRequest(AsyncWebServerRequest *request) {
+    if (request->url() == "/") {
+        this->handle_index(request);
+    } else if (request->url() == "/data") {
+        this->handle_data(request);
+    } else if (request->url() == "/profile_data") {
+        this->handle_profile_data(request);
+    } else if (request->url() == "/style.css") {
+        this->handle_style(request);
+    } else if (request->url() == "/script.js") {
+        this->handle_script(request);
+    } else if (request->url() == "/switch_control") {
+        this->handle_switch_control(request);
     }
-    
+}
+
+void ReflowWebServer::handle_index(AsyncWebServerRequest *request) {
+    auto *response = request->beginResponse_P(200, "text/html", INDEX_HTML_GZIP, INDEX_HTML_GZIP_SIZE);
+    response->addHeader("Content-Encoding", "gzip");
+    request->send(response);
+}
+
+void ReflowWebServer::handle_data(AsyncWebServerRequest *request) {
     // Combine temperature data and switch status into single JSON response
     std::string temperature_data = "[]";
-    if (server->reflow_curve_ != nullptr) {
-        temperature_data = server->reflow_curve_->get_temperature_data_json();
+    if (this->reflow_curve_ != nullptr) {
+        temperature_data = this->reflow_curve_->get_temperature_data_json();
     }
     
     // Get reflow curve state
     bool switch_state = false;
-    if (server->reflow_curve_ != nullptr) {
-        switch_state = server->reflow_curve_->is_on();
+    if (this->reflow_curve_ != nullptr) {
+        switch_state = this->reflow_curve_->is_on();
     }
     
     std::string json = "{";
@@ -151,25 +102,14 @@ esp_err_t ReflowWebServer::data_handler(httpd_req_t *req) {
     json += switch_state ? "true" : "false";
     json += "}";
     
-    httpd_resp_set_type(req, "application/json");
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
-    httpd_resp_send(req, json.c_str(), json.length());
-    return ESP_OK;
+    request->send(200, "application/json", json.c_str());
 }
 
-esp_err_t ReflowWebServer::profile_data_handler(httpd_req_t *req) {
-    ReflowWebServer* server = static_cast<ReflowWebServer*>(req->user_ctx);
-    
-    if (!server->authenticate_request(req)) {
-        httpd_resp_set_status(req, "401 Unauthorized");
-        httpd_resp_send(req, "Unauthorized", HTTPD_RESP_USE_STRLEN);
-        return ESP_OK;
-    }
-    
+void ReflowWebServer::handle_profile_data(AsyncWebServerRequest *request) {
     // Get reflow profile data if active
     std::string reflow_profile_data = "[]";
-    if (server->reflow_curve_ != nullptr && server->reflow_curve_->is_on()) {
-        auto profile_points = server->reflow_curve_->get_profile_data_with_timestamps();
+    if (this->reflow_curve_ != nullptr && this->reflow_curve_->is_on()) {
+        auto profile_points = this->reflow_curve_->get_profile_data_with_timestamps();
         std::ostringstream profile_json;
         profile_json << "[";
         bool first = true;
@@ -182,108 +122,47 @@ esp_err_t ReflowWebServer::profile_data_handler(httpd_req_t *req) {
         reflow_profile_data = profile_json.str();
     }
     
-    httpd_resp_set_type(req, "application/json");
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
-    httpd_resp_send(req, reflow_profile_data.c_str(), reflow_profile_data.length());
-    return ESP_OK;
+    request->send(200, "application/json", reflow_profile_data.c_str());
 }
 
-esp_err_t ReflowWebServer::style_handler(httpd_req_t *req) {
-    ReflowWebServer* server = static_cast<ReflowWebServer*>(req->user_ctx);
-    httpd_resp_set_type(req, "text/css");
-    httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
-    httpd_resp_send(req, reinterpret_cast<const char*>(STYLE_CSS_GZIP), STYLE_CSS_GZIP_SIZE);
-    return ESP_OK;
+void ReflowWebServer::handle_style(AsyncWebServerRequest *request) {
+    auto *response = request->beginResponse_P(200, "text/css", STYLE_CSS_GZIP, STYLE_CSS_GZIP_SIZE);
+    response->addHeader("Content-Encoding", "gzip");
+    request->send(response);
 }
 
-esp_err_t ReflowWebServer::script_handler(httpd_req_t *req) {
-    ReflowWebServer* server = static_cast<ReflowWebServer*>(req->user_ctx);
-    httpd_resp_set_type(req, "application/javascript");
-    httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
-    httpd_resp_send(req, reinterpret_cast<const char*>(SCRIPT_JS_GZIP), SCRIPT_JS_GZIP_SIZE);
-    return ESP_OK;
+void ReflowWebServer::handle_script(AsyncWebServerRequest *request) {
+    auto *response = request->beginResponse_P(200, "application/javascript", SCRIPT_JS_GZIP, SCRIPT_JS_GZIP_SIZE);
+    response->addHeader("Content-Encoding", "gzip");
+    request->send(response);
 }
 
-esp_err_t ReflowWebServer::switch_control_handler(httpd_req_t *req) {
-    ReflowWebServer* server = static_cast<ReflowWebServer*>(req->user_ctx);
-    
-    if (!server->authenticate_request(req)) {
-        httpd_resp_set_status(req, "401 Unauthorized");
-        httpd_resp_send(req, "Unauthorized", HTTPD_RESP_USE_STRLEN);
-        return ESP_OK;
-    }
-    
-    char buf[100];
-    int ret = httpd_req_recv(req, buf, sizeof(buf) - 1);
-    if (ret <= 0) {
-        httpd_resp_set_status(req, "400 Bad Request");
-        httpd_resp_send(req, "Bad Request", HTTPD_RESP_USE_STRLEN);
-        return ESP_OK;
-    }
-    buf[ret] = '\0';
-    
-    // Parse JSON: {"state": true/false}
-    bool new_state = strstr(buf, "true") != nullptr;
-    
-    // Control reflow curve
-    if (server->reflow_curve_ != nullptr) {
-        if (new_state) {
-            server->reflow_curve_->turn_on();
-        } else {
-            server->reflow_curve_->turn_off();
+void ReflowWebServer::handle_switch_control(AsyncWebServerRequest *request) {
+    if (request->hasParam("state")) {
+        AsyncWebParameter* param = request->getParam("state");
+        bool new_state = param->value() == "true";
+        
+        // Control reflow curve
+        if (this->reflow_curve_ != nullptr) {
+            if (new_state) {
+                this->reflow_curve_->turn_on();
+            } else {
+                this->reflow_curve_->turn_off();
+            }
         }
     }
     
     // Return current state based on reflow curve
     bool current_state = false;
-    if (server->reflow_curve_ != nullptr) {
-        current_state = server->reflow_curve_->is_on();
+    if (this->reflow_curve_ != nullptr) {
+        current_state = this->reflow_curve_->is_on();
     }
     
     std::string response = "{\"state\": ";
     response += current_state ? "true" : "false";
     response += "}";
     
-    httpd_resp_set_type(req, "application/json");
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
-    httpd_resp_send(req, response.c_str(), response.length());
-    return ESP_OK;
+    request->send(200, "application/json", response.c_str());
 }
-
-#endif
-
-
-bool ReflowWebServer::authenticate_request(httpd_req_t *req) {
-    if (this->username_.empty()) {
-        return true;  // No authentication required
-    }
-    
-#ifdef USE_ESP32
-    char auth_header[256];
-    size_t header_len = httpd_req_get_hdr_value_len(req, "Authorization");
-    
-    if (header_len == 0 || header_len >= sizeof(auth_header)) {
-        return false;
-    }
-    
-    if (httpd_req_get_hdr_value_str(req, "Authorization", auth_header, sizeof(auth_header)) != ESP_OK) {
-        return false;
-    }
-    
-    // Basic authentication check (simplified)
-    std::string auth_string = this->username_ + ":" + this->password_;
-    std::vector<uint8_t> auth_bytes(auth_string.begin(), auth_string.end());
-    std::string expected = "Basic " + esphome::base64_encode(auth_bytes);
-    return std::string(auth_header) == expected;
-#endif
-    
-    return false;
-}
-
-
-
-
-
-
 }  // namespace reflow_web_server
 }  // namespace esphome

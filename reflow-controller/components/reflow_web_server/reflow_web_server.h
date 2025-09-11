@@ -1,56 +1,50 @@
 #pragma once
 
 #include "esphome/core/component.h"
+#include "esphome/components/web_server_base/web_server_base.h"
 #include "../reflow_curve/reflow_curve.h"
 
-#ifdef USE_ESP32
-#include "esp_http_server.h"
+#ifdef USE_ARDUINO
+#include <ESPAsyncWebServer.h>
+#elif USE_ESP_IDF
+#include "esphome/core/hal.h"
+#include "esphome/components/web_server_idf/web_server_idf.h"
 #endif
 
-#include <deque>
 #include <memory>
 #include <string>
 
 namespace esphome {
 namespace reflow_web_server {
 
-class ReflowWebServer : public Component {
+class ReflowWebServer : public AsyncWebHandler, public Component {
 public:
-    ReflowWebServer() = default;
+    ReflowWebServer(web_server_base::WebServerBase *base);
     
     void setup() override;
     void loop() override;
     void dump_config() override;
     float get_setup_priority() const override;
     
-    void set_port(uint16_t port) { port_ = port; }
-    void set_username(const std::string &username) { username_ = username; }
-    void set_password(const std::string &password) { password_ = password; }
     void set_reflow_curve(reflow_curve::ReflowCurve *reflow_curve) { reflow_curve_ = reflow_curve; }
     void set_update_interval(uint32_t update_interval) { update_interval_ = update_interval; }
     
+    // AsyncWebHandler interface
+    bool canHandle(AsyncWebServerRequest *request) override;
+    void handleRequest(AsyncWebServerRequest *request) override;
+    
 protected:
-    static esp_err_t index_handler(httpd_req_t *req);
-    static esp_err_t data_handler(httpd_req_t *req);
-    static esp_err_t profile_data_handler(httpd_req_t *req);
-    static esp_err_t style_handler(httpd_req_t *req);
-    static esp_err_t script_handler(httpd_req_t *req);
-    static esp_err_t switch_control_handler(httpd_req_t *req);
+    void handle_index(AsyncWebServerRequest *request);
+    void handle_data(AsyncWebServerRequest *request);
+    void handle_profile_data(AsyncWebServerRequest *request);
+    void handle_style(AsyncWebServerRequest *request);
+    void handle_script(AsyncWebServerRequest *request);
+    void handle_switch_control(AsyncWebServerRequest *request);
     
-    bool authenticate_request(httpd_req_t *req);
-    
-    
-    httpd_handle_t server_{nullptr};
-    uint16_t port_{80};
-    std::string username_;
-    std::string password_;
-    
+    web_server_base::WebServerBase *base_;
     reflow_curve::ReflowCurve *reflow_curve_{nullptr};
     uint32_t update_interval_{1000};
     uint32_t last_update_{0};
-    
-    // Static instance for C callback access
-    static ReflowWebServer* instance_;
 };
 
 }  // namespace reflow_web_server
