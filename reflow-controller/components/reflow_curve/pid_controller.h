@@ -13,19 +13,19 @@ namespace reflow_curve {
 // PID Controller Configuration
 struct PIDConfig {
     // PID (controller output is duty 0..1)
-    double Kp   = 2.0; // 1.2;
-    double Ki   = 0.15; // 0.08;   // per second
-    double Kd   = 0.8; // 4.0;    // seconds (derivative on measurement)
-    double Kff  = 0.35; // 0.20;   // feed-forward on dTset/dt (°C/s)
+    double Kp   = 1.2;
+    double Ki   = 0.08;   // per second
+    double Kd   = 4.0;    // seconds (derivative on measurement)
+    double Kff  = 0.20;   // feed-forward on dTset/dt (°C/s)
 
     // Plant characteristics
-    double tau_dead_s = 2.5; // 6.0;    // dead-time look-ahead
+    double tau_dead_s = 6.0;    // dead-time look-ahead
 
     // Filtering
-    double meas_tau_s = 0.5; // 0.7;    // EMA time constant
+    double meas_tau_s = 0.7;    // EMA time constant
 
     // Time-proportioning window (SSR/relay)
-    double window_s   = 1.0; // 1.5;
+    double window_s   = 1.5;
 
     // Safety
     double max_temp_c = 260.0;
@@ -33,8 +33,11 @@ struct PIDConfig {
     double i_max      =  100.0;
 
     // Predictive clamp near setpoint
-    double near_band_c = 2.0; // 5.0;
-    double u_near_max  = 1.0; // 0.6;
+    double near_band_c = 5.0;
+    double u_near_max  = 0.6;
+
+    double preheat_target_c   = 120.0;  // setpoint during warmup
+    unsigned int preheat_duration_s = 60;   // length of warmup
 };
 
 // PID Controller State
@@ -77,10 +80,10 @@ public:
     void reset_state();
     
     // Setpoint lookup from profile
-    std::pair<double, double> lookup_setpoint(unsigned int now_s) const;
+    std::pair<double, double> lookup_setpoint(int now_s) const;
     
     // Main control function
-    bool control_tick(unsigned int now_s, double dt_s, const std::deque<TemperatureDataPoint> &temp_data);
+    bool control_tick(int now_s, double dt_s, const std::deque<TemperatureDataPoint> &temp_data);
 
 private:
     PIDConfig config_;

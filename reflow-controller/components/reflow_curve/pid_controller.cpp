@@ -11,21 +11,20 @@ void PIDController::reset_state() {
     state_ = PIDState{};
 }
 
-std::pair<double, double> PIDController::lookup_setpoint(unsigned int now_s) const {
+std::pair<double, double> PIDController::lookup_setpoint(int now_s) const {
     if (REFLOW_PROFILE_SIZE == 0) return {25.0, 0.0};
     
-    unsigned int sec = now_s;
-    if (sec <= REFLOW_PROFILE_DATA[0].time_seconds) {
+    if (now_s <= REFLOW_PROFILE_DATA[0].time_seconds) {
         return {REFLOW_PROFILE_DATA[0].temperature_celsius, 0.0};
     }
-    if (sec >= REFLOW_PROFILE_DATA[REFLOW_PROFILE_SIZE - 1].time_seconds) {
+    if (now_s >= REFLOW_PROFILE_DATA[REFLOW_PROFILE_SIZE - 1].time_seconds) {
         return {REFLOW_PROFILE_DATA[REFLOW_PROFILE_SIZE - 1].temperature_celsius, 0.0};
     }
     
     // Find the profile points that bracket this time
     unsigned int idx = 0;
     for (unsigned int i = 0; i < REFLOW_PROFILE_SIZE - 1; i++) {
-        if (REFLOW_PROFILE_DATA[i].time_seconds <= sec && sec < REFLOW_PROFILE_DATA[i + 1].time_seconds) {
+        if (REFLOW_PROFILE_DATA[i].time_seconds <= now_s && now_s < REFLOW_PROFILE_DATA[i + 1].time_seconds) {
             idx = i;
             break;
         }
@@ -51,15 +50,26 @@ std::pair<double, double> PIDController::lookup_setpoint(unsigned int now_s) con
     return {temp, slope};
 }
 
-bool PIDController::control_tick(unsigned int now_s, double dt_s, const std::deque<TemperatureDataPoint> &temp_data) {
+bool PIDController::control_tick(int now_s, double dt_s, const std::deque<TemperatureDataPoint> &temp_data) {
     if (temp_data.empty() || dt_s <= 0.0) {
         state_.last_u = 0.0;
         state_.on_time_s = 0.0;
         return false;
     }
 
-    // 1) Setpoint & discrete slope (°C/s) from profile
-    auto [Tset, dTset_dt] = lookup_setpoint(now_s);
+    double Tset, dTset_dt;
+
+    if (now_s < config_.preheat_duration_s) {
+        // hold a fixed temp so the controller warms the chamber
+        Tset = config_.preheat_target_c;
+        dTset_dt = 0.0;
+    } else {
+        // after warmup, shift into the real profile
+        auto sp = lookup_setpoint(now_s - config_.preheat_duration_s);
+        Tset = sp.first;
+        dTset_dt = sp.second;  // °C/s
+    }
+
     state_.last_set_c = Tset;
     state_.last_set_slope = dTset_dt;
 

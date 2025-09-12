@@ -30,8 +30,8 @@ void ReflowCurve::loop() {
         // Run control at reasonable frequency (e.g., every 100ms)
         if (dt_s >= 0.1) {
             // Calculate elapsed time since start
-            ESPTime now_time = ESPTime::from_epoch_local(now_millis / 1000);
-            unsigned int elapsed_s = static_cast<unsigned int>(now_time.timestamp - this->start_timestamp_.timestamp);
+            ESPTime now_time = time_component_->now();
+            time_t elapsed_s = now_time.timestamp - start_timestamp_.timestamp;
             
             // Run PID control
             bool heater_should_be_on = this->pid_controller_.control_tick(elapsed_s, dt_s, this->temperature_data_);
@@ -111,6 +111,17 @@ std::vector<std::pair<std::string, float>> ReflowCurve::get_profile_data_with_ti
     if (!this->is_active_ || !this->start_timestamp_.is_valid()) {
         return result;  // Return empty if not active
     }
+
+    // warmup curve
+    auto warmup_period = pid_controller_.get_config().preheat_duration_s;
+    for (int i = 0; i < warmup_period; i++) {
+        ESPTime point_time = this->start_timestamp_;
+        point_time.timestamp += i;
+        
+        // Convert to ISO timestamp string
+        std::string timestamp = ESPTime::from_epoch_local(point_time.timestamp).strftime("%Y-%m-%dT%H:%M:%S");
+        result.push_back({timestamp, REFLOW_PROFILE_DATA[0].temperature_celsius});
+    }
     
     // Generate timestamps for each profile point
     for (int i = 0; i < REFLOW_PROFILE_SIZE; i++) {
@@ -118,7 +129,7 @@ std::vector<std::pair<std::string, float>> ReflowCurve::get_profile_data_with_ti
         
         // Calculate point time by adding seconds to start time
         ESPTime point_time = this->start_timestamp_;
-        point_time.timestamp += point.time_seconds;
+        point_time.timestamp += point.time_seconds + warmup_period;
         
         // Convert to ISO timestamp string
         std::string timestamp = ESPTime::from_epoch_local(point_time.timestamp).strftime("%Y-%m-%dT%H:%M:%S");
